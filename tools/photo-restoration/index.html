@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Restoration via Frequency Separation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script async src="https://docs.opencv.org/4.9.0/opencv.js" onload="onOpenCvReady();"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .canvas-container {
+            border: 2px dashed #d1d5db;
+            border-radius: 0.5rem;
+            position: relative;
+            background-color: #f9fafb;
+            min-height: 200px;
+            overflow: hidden;
+            transition: all 0.2s ease-in-out;
+        }
+        .dragover-active {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        img.preview {
+            max-width: 100%;
+            max-height: 400px;
+            object-fit: contain;
+            border-radius: 0.5rem;
+        }
+        #resultCanvas, #canvasA, #canvasB, #maskDisplayCanvasA, #maskDisplayCanvasB, #keypointCanvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            border-radius: 0.5rem;
+        }
+        #canvasA, #canvasB, #maskDisplayCanvasA, #maskDisplayCanvasB {
+             border: 2px solid #d1d5db;
+             cursor: crosshair;
+        }
+        #maskDrawCanvasA, #maskDrawCanvasB { cursor: crosshair; }
+        .placeholder-text {
+            color: #6b7280;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .hidden { display: none; }
+        .toggle-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            transition: all 0.2s ease-in-out;
+            border: 2px solid transparent;
+        }
+        .toggle-btn.active {
+            background-color: #3b82f6;
+            color: white;
+        }
+        .toggle-btn:not(.active) {
+            background-color: #e5e7eb;
+            color: #374151;
+        }
+        .toggle-btn:not(.active):hover { background-color: #d1d5db; }
+        .align-mode-btn.active {
+            background-color: #3b82f6;
+            color: white;
+        }
+        .align-mode-btn:not(.active) {
+            background-color: white;
+            color: #374151;
+        }
+        .lens {
+            width: 150px;
+            height: 150px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            background-color: #fff;
+            background-image:
+                linear-gradient(rgba(0,0,0,0.2) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,0,0,0.2) 1px, transparent 1px);
+            background-size: 50% 50%;
+            background-position: center center;
+            z-index: 50;
+        }
+        .lens canvas {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+     <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-8">
+        <div class="max-w-7xl mx-auto mb-6">
+            <a href="../../" class="text-blue-600 hover:text-blue-800 font-medium inline-flex items-center">
+                <i class="fa-solid fa-arrow-left mr-2"></i> Back to Tools
+            </a>
+        </div>
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Photo Restoration Tool</h1>
+            <p class="mt-2 text-md text-gray-600">Combine high-res details and low-res colors using Frequency Separation.</p>
+        </header>
+
+        <div id="controls" class="bg-white p-6 rounded-lg shadow-md mb-8">
+            <div id="loader-container" class="text-center">
+                <div class="loader inline-block"></div>
+                <p class="mt-2 font-semibold text-blue-600">Loading Image Processing Library...</p>
+                <p class="text-sm text-gray-500">This may take a moment.</p>
+            </div>
+
+            <div id="app-content" class="hidden">
+                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                    <div>
+                        <label for="imageAInput" class="block text-sm font-medium text-gray-700 mb-2">1. Upload Image A (High-Res, Discolored)</label>
+                        <input type="file" id="imageAInput" accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/>
+                        <div class="mt-4 text-center">
+                            <h3 class="text-lg font-semibold mb-2">Image A Preview</h3>
+                            <div id="dropZoneA" class="canvas-container">
+                                <img id="previewA" class="preview hidden" alt="Preview of Image A">
+                                <p id="placeholderA" class="placeholder-text">Upload Image A<br>or Drag & Drop</p>
+                            </div>
+                        </div>
+                    </div>
+                     <div>
+                        <label for="imageBInput" class="block text-sm font-medium text-gray-700 mb-2">2. Upload Image B (Low-Res, Repaired Color)</label>
+                        <input type="file" id="imageBInput" accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"/>
+                        <div class="mt-4 text-center">
+                             <h3 class="text-lg font-semibold mb-2">Image B Preview</h3>
+                            <div id="dropZoneB" class="canvas-container">
+                                <img id="previewB" class="preview hidden" alt="Preview of Image B">
+                                <p id="placeholderB" class="placeholder-text">Upload Image B<br>or Drag & Drop</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-6 border-gray-200">
+
+                <div id="alignment-mode-selector" class="mb-4 text-center hidden">
+                    <h3 class="text-lg font-semibold mb-2">3. Choose Alignment Method</h3>
+                    <div class="inline-flex rounded-md shadow-sm" role="group">
+                        <button type="button" id="autoAlignBtn" class="align-mode-btn px-4 py-2 text-sm font-medium border border-gray-200 rounded-l-lg hover:bg-gray-100">Automatic</button>
+                        <button type="button" id="maskedAutoAlignBtn" class="align-mode-btn px-4 py-2 text-sm font-medium border-t border-b border-gray-200 hover:bg-gray-100">Masked Auto</button>
+                        <button type="button" id="manualAlignBtn" class="align-mode-btn px-4 py-2 text-sm font-medium border border-gray-200 rounded-r-md hover:bg-gray-100">Manual (Points)</button>
+                    </div>
+                </div>
+
+                <div id="masked-alignment-section" class="hidden">
+                    <p class="text-xs text-gray-500 mb-4 text-center">Click and drag on both images to "paint" the areas the computer should use to find matching features.</p>
+                     <div class="flex flex-col items-center gap-8">
+                        <div class="w-full max-w-3xl mx-auto text-center">
+                            <h4 class="font-medium mb-2">Image A Mask</h4>
+                            <div class="relative w-full">
+                                <canvas id="maskDisplayCanvasA"></canvas>
+                                <canvas id="maskDrawCanvasA" class="absolute top-0 left-0 w-full h-full"></canvas>
+                            </div>
+                        </div>
+                        <div class="w-full max-w-3xl mx-auto text-center">
+                            <h4 class="font-medium mb-2">Image B Mask</h4>
+                            <div class="relative w-full">
+                                <canvas id="maskDisplayCanvasB"></canvas>
+                                <canvas id="maskDrawCanvasB" class="absolute top-0 left-0 w-full h-full"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-center mt-4 space-x-4">
+                        <button id="resetMasksBtn" class="bg-red-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-600 transition duration-300">Reset Masks</button>
+                        <button id="applyMasksBtn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300">Run Masked Alignment</button>
+                    </div>
+
+                    <div id="keypoint-visualization-section" class="hidden my-8">
+                        <h4 class="text-lg font-semibold mb-2 text-center">Keypoint Matches</h4>
+                        <p class="text-xs text-gray-500 mb-4 text-center">Green lines connect features that the algorithm matched between the two images.</p>
+                        <div class="canvas-container max-w-full mx-auto">
+                            <canvas id="keypointCanvas"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="point-alignment-section" class="hidden">
+                    <p class="text-xs text-gray-500 mb-4 text-center">Click 3 corresponding points on both images to define the alignment. The process will run automatically after the 3rd pair of points is selected.</p>
+
+                    <div class="flex flex-col items-center gap-8">
+                        <div class="w-full max-w-3xl mx-auto text-center">
+                            <h4 class="font-medium mb-2">Image A (Reference)</h4>
+                            <div class="relative w-full">
+                                <canvas id="canvasA"></canvas>
+                                <div id="lensA" class="lens hidden absolute rounded-full border-2 border-blue-500 overflow-hidden pointer-events-none">
+                                    <canvas id="lensCanvasA"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="w-full max-w-3xl mx-auto text-center">
+                            <h4 class="font-medium mb-2">Image B (to Align)</h4>
+                             <div class="relative w-full">
+                                <canvas id="canvasB"></canvas>
+                                 <div id="lensB" class="lens hidden absolute rounded-full border-2 border-green-500 overflow-hidden pointer-events-none">
+                                    <canvas id="lensCanvasB"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-center mt-4">
+                        <button id="resetPointsBtn" class="bg-red-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-600 transition duration-300">Reset Points</button>
+                    </div>
+                </div>
+
+                <hr id="radius-separator" class="my-6 border-gray-200 hidden">
+
+                <div id="radius-section" class="mb-6 hidden">
+                    <div class="flex justify-between items-center mb-1">
+                        <label for="radiusSlider" class="block text-sm font-medium text-gray-700">4. Adjust Blur Strength: <span id="radiusValue" class="font-bold text-blue-600">2.0</span></label>
+                        <button id="optimalStrengthBtn" class="text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-1 px-3 rounded-full">Set Min. Effective Strength</button>
+                    </div>
+                    <p class="text-xs text-gray-500 mb-2">Controls the separation between detail and color. Higher values create a stronger blur.</p>
+                    <input type="range" id="radiusSlider" min="0.1" max="20" value="2.0" step="0.1" class="w-full">
+                </div>
+
+                <div id="error-message" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative my-8" role="alert">
+                    <strong class="font-bold">Error:</strong>
+                    <span class="block sm:inline" id="error-text"></span>
+                </div>
+
+                <div class="mt-8 text-center hidden" id="result-area">
+                    <h3 class="text-lg font-semibold mb-2">Result</h3>
+                     <div class="canvas-container max-w-full mx-auto">
+                        <canvas id="resultCanvas"></canvas>
+                        <div id="resultPlaceholder">
+                            <p class="placeholder-text">Result will appear here</p>
+                        </div>
+                        <div id="processing-spinner" class="hidden" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+                            <div class="loader"></div>
+                            <p class="mt-2 text-sm text-gray-600">Processing...</p>
+                        </div>
+                    </div>
+                    <div id="toggle-view-buttons" class="hidden mt-4 flex justify-center space-x-2">
+                        <button id="showRestoredBtn" class="toggle-btn">Restored</button>
+                        <button id="showABtn" class="toggle-btn">Compare A</button>
+                        <button id="showBBtn" class="toggle-btn">Compare B</button>
+                    </div>
+                    <button id="downloadButton" class="hidden mt-4 bg-green-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition duration-300">
+                        Download Result
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const imageAInput = document.getElementById('imageAInput');
+        const imageBInput = document.getElementById('imageBInput');
+        const radiusSlider = document.getElementById('radiusSlider');
+        const radiusValue = document.getElementById('radiusValue');
+        const downloadButton = document.getElementById('downloadButton');
+        const previewA = document.getElementById('previewA');
+        const previewB = document.getElementById('previewB');
+        const placeholderA = document.getElementById('placeholderA');
+        const placeholderB = document.getElementById('placeholderB');
+        const dropZoneA = document.getElementById('dropZoneA');
+        const dropZoneB = document.getElementById('dropZoneB');
+        const resultCanvas = document.getElementById('resultCanvas');
+        const resultPlaceholder = document.getElementById('resultPlaceholder');
+        const resultArea = document.getElementById('result-area');
+        const processingSpinner = document.getElementById('processing-spinner');
+        const errorMessage = document.getElementById('error-message');
+        const errorText = document.getElementById('error-text');
+        const toggleViewButtons = document.getElementById('toggle-view-buttons');
+        const showRestoredBtn = document.getElementById('showRestoredBtn');
+        const showABtn = document.getElementById('showABtn');
+        const showBBtn = document.getElementById('showBBtn');
+        const alignmentModeSelector = document.getElementById('alignment-mode-selector');
+        const autoAlignBtn = document.getElementById('autoAlignBtn');
+        const manualAlignBtn = document.getElementById('manualAlignBtn');
+        const maskedAutoAlignBtn = document.getElementById('maskedAutoAlignBtn');
+        const maskedAlignmentSection = document.getElementById('masked-alignment-section');
+        const maskDisplayCanvasA = document.getElementById('maskDisplayCanvasA');
+        const maskDrawCanvasA = document.getElementById('maskDrawCanvasA');
+        const maskDisplayCanvasB = document.getElementById('maskDisplayCanvasB');
+        const maskDrawCanvasB = document.getElementById('maskDrawCanvasB');
+        const resetMasksBtn = document.getElementById('resetMasksBtn');
+        const applyMasksBtn = document.getElementById('applyMasksBtn');
+        const pointAlignmentSection = document.getElementById('point-alignment-section');
+        const radiusSection = document.getElementById('radius-section');
+        const radiusSeparator = document.getElementById('radius-separator');
+        const canvasA = document.getElementById('canvasA');
+        const canvasB = document.getElementById('canvasB');
+        const resetPointsBtn = document.getElementById('resetPointsBtn');
+        const lensA = document.getElementById('lensA');
+        const lensB = document.getElementById('lensB');
+        const lensCanvasA = document.getElementById('lensCanvasA');
+        const lensCanvasB = document.getElementById('lensCanvasB');
+        const keypointVisualizationSection = document.getElementById('keypoint-visualization-section');
+        const keypointCanvas = document.getElementById('keypointCanvas');
+        const optimalStrengthBtn = document.getElementById('optimalStrengthBtn');
+
+        let cvReady = false;
+        let isProcessing = false;
+
+        // Processing Queue logic
+        let targetSigma = null;
+
+        // State variables
+        let alignmentMode = 'auto'; // 'auto', 'masked', or 'manual'
+        let fullResImgA = null, fullResImgB = null;
+        let fullResCanvasA = null, fullResCanvasB = null;
+        let alignedBMat = null;
+        let processedResultMat = null;
+        let manualPointsA = [], manualPointsB = [];
+        let previewScaleFactorA = 1, previewScaleFactorB = 1;
+
+        function onOpenCvReady() {
+            cvReady = true;
+            document.getElementById('loader-container').classList.add('hidden');
+            document.getElementById('app-content').classList.remove('hidden');
+            setupDragAndDrop(dropZoneA, imageAInput);
+            setupDragAndDrop(dropZoneB, imageBInput);
+
+            autoAlignBtn.addEventListener('click', () => setAlignmentMode('auto'));
+            manualAlignBtn.addEventListener('click', () => setAlignmentMode('manual'));
+            maskedAutoAlignBtn.addEventListener('click', () => setAlignmentMode('masked'));
+
+            canvasA.addEventListener('click', (e) => handleCanvasClick(e, 'A'));
+            canvasB.addEventListener('click', (e) => handleCanvasClick(e, 'B'));
+
+            canvasA.addEventListener('mouseenter', () => { if(alignmentMode === 'manual') lensA.classList.remove('hidden'); });
+            canvasA.addEventListener('mouseleave', () => lensA.classList.add('hidden'));
+            canvasA.addEventListener('mousemove', (e) => handleMouseMove(e, 'A'));
+            canvasB.addEventListener('mouseenter', () => { if(alignmentMode === 'manual') lensB.classList.remove('hidden'); });
+            canvasB.addEventListener('mouseleave', () => lensB.classList.add('hidden'));
+            canvasB.addEventListener('mousemove', (e) => handleMouseMove(e, 'B'));
+
+            setupMasking(maskDrawCanvasA);
+            setupMasking(maskDrawCanvasB);
+            resetMasksBtn.addEventListener('click', setupMaskCanvases);
+            applyMasksBtn.addEventListener('click', alignWithMasks);
+
+            resetPointsBtn.addEventListener('click', resetPointSelection);
+            optimalStrengthBtn.addEventListener('click', setOptimalStrength);
+
+            radiusSlider.addEventListener('input', () => {
+                radiusValue.textContent = radiusSlider.value;
+            });
+            radiusSlider.addEventListener('change', queueSliderProcessing);
+        }
+
+        imageAInput.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) {
+                previewA.src = URL.createObjectURL(e.target.files[0]);
+                previewA.classList.remove('hidden');
+                placeholderA.classList.add('hidden');
+                handleImageUpload();
+            }
+        });
+
+        imageBInput.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) {
+                previewB.src = URL.createObjectURL(e.target.files[0]);
+                previewB.classList.remove('hidden');
+                placeholderB.classList.add('hidden');
+                handleImageUpload();
+            }
+        });
+
+        async function handleImageUpload() {
+            if (!imageAInput.files[0] || !imageBInput.files[0]) return;
+
+            hideError();
+            resultArea.classList.remove('hidden');
+            processingSpinner.classList.remove('hidden');
+            resultPlaceholder.classList.remove('hidden');
+            resultCanvas.classList.add('hidden');
+            pointAlignmentSection.classList.add('hidden');
+            maskedAlignmentSection.classList.add('hidden');
+            keypointVisualizationSection.classList.add('hidden');
+            radiusSection.classList.add('hidden');
+            radiusSeparator.classList.add('hidden');
+            toggleViewButtons.classList.add('hidden');
+            downloadButton.classList.add('hidden');
+
+            if (fullResImgA) fullResImgA.delete();
+            fullResImgA = null; fullResCanvasA = null;
+            if (fullResImgB) fullResImgB.delete();
+            fullResImgB = null; fullResCanvasB = null;
+
+            try {
+                // Yield to allow UI spinner render
+                await new Promise(r => setTimeout(r, 50));
+
+                const resultA = await fileToMatAndCanvas(imageAInput);
+                fullResImgA = resultA.mat;
+                fullResCanvasA = resultA.canvas;
+
+                const resultB = await fileToMatAndCanvas(imageBInput);
+                fullResImgB = resultB.mat;
+                fullResCanvasB = resultB.canvas;
+
+                alignmentModeSelector.classList.remove('hidden');
+                setAlignmentMode('auto');
+            } catch (err) {
+                showError(err.message);
+                processingSpinner.classList.add('hidden');
+            }
+        }
+
+        downloadButton.addEventListener('click', () => {
+            const link = document.createElement('a');
+            const originalFileA = imageAInput.files[0];
+            const baseName = originalFileA ? originalFileA.name.substring(0, originalFileA.name.lastIndexOf('.')) || originalFileA.name : 'restored_image';
+            link.download = `${baseName} - restored.png`;
+            link.href = resultCanvas.toDataURL('image/png');
+            link.click();
+        });
+
+        showRestoredBtn.addEventListener('click', () => { if (processedResultMat) { cv.imshow('resultCanvas', processedResultMat); updateActiveButton('restored'); } });
+        showABtn.addEventListener('click', () => { if (fullResImgA) { cv.imshow('resultCanvas', fullResImgA); updateActiveButton('A'); } });
+        showBBtn.addEventListener('click', () => { if (alignedBMat) { cv.imshow('resultCanvas', alignedBMat); updateActiveButton('B'); } });
+
+        function showError(message) { errorText.textContent = message; errorMessage.classList.remove('hidden'); }
+        function hideError() { errorMessage.classList.add('hidden'); }
+        function updateActiveButton(type) {
+            showRestoredBtn.classList.toggle('active', type === 'restored');
+            showABtn.classList.toggle('active', type === 'A');
+            showBBtn.classList.toggle('active', type === 'B');
+        }
+
+        function setupDragAndDrop(zone, input) {
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eName => zone.addEventListener(eName, e => { e.preventDefault(); e.stopPropagation(); }, false));
+            ['dragenter', 'dragover'].forEach(eName => zone.addEventListener(eName, () => zone.classList.add('dragover-active'), false));
+            ['dragleave', 'drop'].forEach(eName => zone.addEventListener(eName, () => zone.classList.remove('dragover-active'), false));
+            zone.addEventListener('drop', e => {
+                if (e.dataTransfer.files.length === 1 && e.dataTransfer.files[0].type.startsWith('image/')) {
+                    input.files = e.dataTransfer.files;
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                } else { showError("Please drop a single image file."); }
+            }, false);
+        }
+
+        function fileToMatAndCanvas(fileInput) {
+            return new Promise((resolve, reject) => {
+                if (!fileInput.files || !fileInput.files[0]) { return reject(new Error("No file selected.")); }
+                const file = fileInput.files[0];
+                const img = new Image();
+                const url = URL.createObjectURL(file);
+                img.onload = () => {
+                    try {
+                        const fullResCanvas = document.createElement('canvas');
+                        fullResCanvas.width = img.naturalWidth;
+                        fullResCanvas.height = img.naturalHeight;
+                        fullResCanvas.getContext('2d').drawImage(img, 0, 0);
+
+                        const mat = cv.imread(fullResCanvas);
+                        if (mat.empty()) { reject(new Error("cv.imread failed.")); }
+                        else { resolve({ mat: mat, canvas: fullResCanvas }); }
+                    } catch (e) { reject(e); } finally { URL.revokeObjectURL(url); }
+                };
+                img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Failed to load image file.")); };
+                img.src = url;
+            });
+        }
+
+        function setAlignmentMode(mode) {
+            alignmentMode = mode;
+            autoAlignBtn.classList.toggle('active', mode === 'auto');
+            manualAlignBtn.classList.toggle('active', mode === 'manual');
+            maskedAutoAlignBtn.classList.toggle('active', mode === 'masked');
+
+            pointAlignmentSection.classList.add('hidden');
+            maskedAlignmentSection.classList.add('hidden');
+            keypointVisualizationSection.classList.add('hidden');
+            hideError();
+
+            lensA.classList.add('hidden');
+            lensB.classList.add('hidden');
+
+            if (fullResImgA && fullResImgB) {
+                radiusSection.classList.add('hidden');
+                radiusSeparator.classList.add('hidden');
+                toggleViewButtons.classList.add('hidden');
+                downloadButton.classList.add('hidden');
+                resultArea.classList.add('hidden');
+
+                if (mode === 'auto') {
+                    resultArea.classList.remove('hidden');
+                    alignAutomatically();
+                } else if (mode === 'manual') {
+                    resetPointSelection();
+                } else if (mode === 'masked') {
+                    setupMaskCanvases();
+                }
+            }
+        }
+
+        function drawPreviewCanvases(canvas, fullResMat) {
+            const maxW = canvas.parentElement.clientWidth || 800; // fallback width
+            const scale = maxW / fullResMat.cols;
+            const size = new cv.Size(maxW, Math.round(fullResMat.rows * scale));
+            const preview = new cv.Mat();
+            cv.resize(fullResMat, preview, size, 0, 0, cv.INTER_AREA);
+            cv.imshow(canvas.id, preview);
+            preview.delete();
+            return 1 / scale;
+        }
+
+        function drawPoints() {
+            [canvasA, canvasB].forEach(c => {
+                const ctx = c.getContext('2d');
+                const points = c.id === 'canvasA' ? manualPointsA : manualPointsB;
+                ctx.lineWidth = 2;
+                ctx.font = 'bold 16px sans-serif';
+
+                points.forEach((p, i) => {
+                    ctx.strokeStyle = '#facc15'; ctx.beginPath();
+                    ctx.arc(p.x, p.y, 5, 0, 2 * Math.PI); ctx.stroke();
+                    ctx.fillStyle = '#facc15'; ctx.fillText(i + 1, p.x + 8, p.y + 6);
+                });
+            });
+        }
+
+        function handleMouseMove(e, type) {
+            if (alignmentMode !== 'manual') return;
+
+            const isA = type === 'A';
+            const canvas = isA ? canvasA : canvasB;
+            const lens = isA ? lensA : lensB;
+            const lensCanvas = isA ? lensCanvasA : lensCanvasB;
+            const fullResCanvas = isA ? fullResCanvasA : fullResCanvasB;
+            const scaleFactor = isA ? previewScaleFactorA : previewScaleFactorB;
+            if (!fullResCanvas) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const lensSize = 150;
+            const zoomLevel = 2;
+
+            lens.style.left = `${x - lensSize / 2}px`;
+            lens.style.top = `${y - lensSize / 2}px`;
+
+            // Calculate raw bounds
+            const sX_raw = (x * scaleFactor) - (lensSize / zoomLevel / 2);
+            const sY_raw = (y * scaleFactor) - (lensSize / zoomLevel / 2);
+
+            // Clamp source rectangle to image boundaries to prevent IndexSizeError
+            let sX = Math.max(0, sX_raw);
+            let sY = Math.max(0, sY_raw);
+            let sW = lensSize / zoomLevel;
+            let sH = lensSize / zoomLevel;
+
+            // Adjust destination to preserve scale if we clipped the source
+            let dX = (sX - sX_raw) * zoomLevel;
+            let dY = (sY - sY_raw) * zoomLevel;
+            let dW = lensSize - dX;
+            let dH = lensSize - dY;
+
+            // Clamp right/bottom boundaries
+            if (sX + sW > fullResCanvas.width) {
+                sW = fullResCanvas.width - sX;
+                dW = sW * zoomLevel;
+            }
+            if (sY + sH > fullResCanvas.height) {
+                sH = fullResCanvas.height - sY;
+                dH = sH * zoomLevel;
+            }
+
+            const lensCtx = lensCanvas.getContext('2d');
+            lensCanvas.width = lensSize;
+            lensCanvas.height = lensSize;
+            lensCtx.clearRect(0, 0, lensSize, lensSize);
+
+            if (sW > 0 && sH > 0) {
+                lensCtx.drawImage(fullResCanvas, sX, sY, sW, sH, dX, dY, dW, dH);
+            }
+        }
+
+        function handleCanvasClick(event, type) {
+            const rect = event.target.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+
+            const points = type === 'A' ? manualPointsA : manualPointsB;
+            if (points.length >= 3) return;
+
+            points.push({ x, y });
+            previewScaleFactorA = drawPreviewCanvases(canvasA, fullResImgA);
+            previewScaleFactorB = drawPreviewCanvases(canvasB, fullResImgB);
+            drawPoints();
+
+            if (manualPointsA.length === 3 && manualPointsB.length === 3) {
+                setTimeout(alignManually, 50);
+            }
+        }
+
+        function resetPointSelection() {
+            manualPointsA = [];
+            manualPointsB = [];
+            if (fullResImgA) {
+                pointAlignmentSection.classList.remove('hidden');
+                previewScaleFactorA = drawPreviewCanvases(canvasA, fullResImgA);
+                previewScaleFactorB = drawPreviewCanvases(canvasB, fullResImgB);
+                drawPoints();
+            }
+        }
+
+        function setupMaskCanvases() {
+            maskedAlignmentSection.classList.remove('hidden');
+            keypointVisualizationSection.classList.add('hidden');
+
+            drawPreviewCanvases(maskDisplayCanvasA, fullResImgA);
+            drawPreviewCanvases(maskDisplayCanvasB, fullResImgB);
+
+            [maskDrawCanvasA, maskDrawCanvasB].forEach(drawCanvas => {
+                const displayCanvas = drawCanvas.id === 'maskDrawCanvasA' ? maskDisplayCanvasA : maskDisplayCanvasB;
+                drawCanvas.width = displayCanvas.width;
+                drawCanvas.height = displayCanvas.height;
+                const ctx = drawCanvas.getContext('2d');
+                ctx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+            });
+        }
+
+        function setupMasking(canvas) {
+            let isDrawing = false;
+            let ctx = canvas.getContext('2d');
+
+            const start = (e) => { isDrawing = true; draw(e); };
+            const end = () => { isDrawing = false; ctx.beginPath(); };
+            const draw = (e) => {
+                if (!isDrawing) return;
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                ctx.lineWidth = 40;
+                ctx.lineCap = 'round';
+                ctx.strokeStyle = 'rgba(255, 255, 0, 0.7)';
+
+                ctx.lineTo(x, y);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+            };
+
+            canvas.addEventListener('mousedown', start);
+            canvas.addEventListener('mouseup', end);
+            canvas.addEventListener('mouseleave', end);
+            canvas.addEventListener('mousemove', draw);
+        }
+
+        function setOptimalStrength() {
+            if (!fullResImgA || !fullResImgB) {
+                showError("Please upload both images first.");
+                return;
+            }
+
+            const ratio = fullResImgA.cols / fullResImgB.cols;
+            let idealSigma = 0.5 * ratio;
+
+            const min = parseFloat(radiusSlider.min);
+            const max = parseFloat(radiusSlider.max);
+            idealSigma = Math.max(min, Math.min(max, idealSigma));
+
+            radiusSlider.value = idealSigma.toFixed(1);
+            radiusValue.textContent = idealSigma.toFixed(1);
+
+            queueSliderProcessing();
+        }
+
+        async function alignWithMasks() {
+            if (isProcessing) return;
+            hideError();
+            resultArea.classList.remove('hidden');
+
+            let maskMatA = null, maskMatB = null;
+            let matsToClean = [];
+            try {
+                const createMaskMat = (maskDrawCanvas, fullResMat) => {
+                    const offscreen = document.createElement('canvas');
+                    offscreen.width = fullResMat.cols;
+                    offscreen.height = fullResMat.rows;
+                    const ctx = offscreen.getContext('2d');
+
+                    ctx.fillStyle = 'black';
+                    ctx.fillRect(0, 0, offscreen.width, offscreen.height);
+                    ctx.drawImage(maskDrawCanvas, 0, 0, offscreen.width, offscreen.height);
+
+                    let rgbaMask = cv.imread(offscreen);
+                    let grayMask = new cv.Mat();
+                    let binaryMask = new cv.Mat();
+                    matsToClean.push(rgbaMask, grayMask);
+
+                    cv.cvtColor(rgbaMask, grayMask, cv.COLOR_RGBA2GRAY);
+                    cv.threshold(grayMask, binaryMask, 1, 255, cv.THRESH_BINARY);
+
+                    return binaryMask;
+                };
+
+                maskMatA = createMaskMat(maskDrawCanvasA, fullResImgA);
+                maskMatB = createMaskMat(maskDrawCanvasB, fullResImgB);
+
+                await alignAutomatically(maskMatA, maskMatB);
+
+            } catch(err) {
+                 showError(err.message || "Failed to process masks.");
+            } finally {
+                 matsToClean.forEach(m => { if(m && !m.isDeleted()) m.delete(); });
+                 if(maskMatA) maskMatA.delete();
+                 if(maskMatB) maskMatB.delete();
+            }
+        }
+
+        async function alignAutomatically(customMaskA = null, customMaskB = null) {
+            if (isProcessing || !fullResImgA || !fullResImgB) return;
+            hideError();
+            isProcessing = true;
+            processingSpinner.classList.remove('hidden');
+            resultPlaceholder.classList.add('hidden');
+            resultCanvas.classList.add('hidden');
+
+            if (alignedBMat) alignedBMat.delete(); alignedBMat = null;
+            let mats = [];
+            try {
+                // Yield to allow UI spinner render
+                await new Promise(r => setTimeout(r, 50));
+
+                const imgB_upscaled = new cv.Mat();
+                mats.push(imgB_upscaled);
+                cv.resize(fullResImgB, imgB_upscaled, fullResImgA.size(), 0, 0, cv.INTER_CUBIC);
+
+                const grayA = new cv.Mat(); const grayB = new cv.Mat();
+                mats.push(grayA, grayB);
+                cv.cvtColor(fullResImgA, grayA, cv.COLOR_RGBA2GRAY);
+                cv.cvtColor(imgB_upscaled, grayB, cv.COLOR_RGBA2GRAY);
+
+                // Securely handle masks so we don't accidentally double-free
+                const maskA = customMaskA || new cv.Mat();
+                const maskB = customMaskB || new cv.Mat();
+                if (!customMaskA) mats.push(maskA);
+                if (!customMaskB) mats.push(maskB);
+
+                const orb = new cv.ORB();
+                const kpA = new cv.KeyPointVector(); const kpB = new cv.KeyPointVector();
+                const desA = new cv.Mat(); const desB = new cv.Mat();
+                mats.push(kpA, kpB, desA, desB);
+
+                orb.detectAndCompute(grayA, maskA, kpA, desA);
+                orb.detectAndCompute(grayB, maskB, kpB, desB);
+
+                if (desA.rows === 0 || desB.rows === 0) throw new Error("Could not find features for automatic alignment.");
+
+                const matchesVec = new cv.DMatchVector(); mats.push(matchesVec);
+                const bf = new cv.BFMatcher(cv.NORM_HAMMING, true);
+                bf.match(desB, desA, matchesVec);
+
+                let jsMatches = Array.from({length: matchesVec.size()}, (_, i) => matchesVec.get(i)).sort((a, b) => a.distance - b.distance);
+                const good_matches = jsMatches.slice(0, Math.min(jsMatches.length, 100));
+
+                if (good_matches.length < 4) throw new Error("Not enough good matches found. Try Manual Alignment or adjust masks.");
+
+                const keypointImage = new cv.Mat();
+                const goodMatchesVec = new cv.DMatchVector();
+                good_matches.forEach(m => goodMatchesVec.push_back(m));
+                mats.push(keypointImage, goodMatchesVec);
+                const color = new cv.Scalar(0, 255, 0, 255);
+                cv.drawMatches(fullResImgA, kpA, imgB_upscaled, kpB, goodMatchesVec, keypointImage, color);
+
+                keypointVisualizationSection.classList.remove('hidden');
+                cv.imshow('keypointCanvas', keypointImage);
+
+                const pointsA = [], pointsB = [];
+                good_matches.forEach(m => {
+                    pointsA.push(kpA.get(m.trainIdx).pt.x, kpA.get(m.trainIdx).pt.y);
+                    pointsB.push(kpB.get(m.queryIdx).pt.x, kpB.get(m.queryIdx).pt.y);
+                });
+                const matA = cv.matFromArray(pointsA.length / 2, 2, cv.CV_32F, pointsA);
+                const matB = cv.matFromArray(pointsB.length / 2, 2, cv.CV_32F, pointsB);
+                mats.push(matA, matB);
+
+                const h = cv.findHomography(matB, matA, cv.RANSAC); mats.push(h);
+                alignedBMat = new cv.Mat();
+                cv.warpPerspective(imgB_upscaled, alignedBMat, h, fullResImgA.size());
+
+                radiusSection.classList.remove('hidden');
+                radiusSeparator.classList.remove('hidden');
+
+                // Allow runFrequencySeparation to run safely
+                isProcessing = false;
+                await queueSliderProcessing();
+
+            } catch (err) {
+                showError(err.message || "Automatic alignment failed.");
+                isProcessing = false;
+                processingSpinner.classList.add('hidden');
+                resultArea.classList.add('hidden');
+            } finally {
+                mats.forEach(m => { if (m && !m.isDeleted()) m.delete(); });
+            }
+        }
+
+        async function alignManually() {
+            if (isProcessing || manualPointsA.length < 3 || manualPointsB.length < 3) return;
+            hideError();
+            isProcessing = true;
+            resultArea.classList.remove('hidden');
+            processingSpinner.classList.remove('hidden');
+            resultPlaceholder.classList.add('hidden');
+            resultCanvas.classList.add('hidden');
+
+            if (alignedBMat) alignedBMat.delete(); alignedBMat = null;
+            let mats = [];
+            try {
+                // Yield to allow UI spinner render
+                await new Promise(r => setTimeout(r, 50));
+
+                const srcPts = manualPointsB.map(p => [p.x * previewScaleFactorB, p.y * previewScaleFactorB]).flat();
+                const dstPts = manualPointsA.map(p => [p.x * previewScaleFactorA, p.y * previewScaleFactorA]).flat();
+
+                const srcMat = cv.matFromArray(3, 2, cv.CV_32F, srcPts);
+                const dstMat = cv.matFromArray(3, 2, cv.CV_32F, dstPts);
+                mats.push(srcMat, dstMat);
+
+                const M = cv.getAffineTransform(srcMat, dstMat); mats.push(M);
+
+                alignedBMat = new cv.Mat();
+                cv.warpAffine(fullResImgB, alignedBMat, M, fullResImgA.size(), cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
+
+                radiusSection.classList.remove('hidden');
+                radiusSeparator.classList.remove('hidden');
+
+                isProcessing = false;
+                await queueSliderProcessing();
+            } catch (err) {
+                showError(err.message || "Manual alignment failed.");
+                isProcessing = false;
+                processingSpinner.classList.add('hidden');
+                resultArea.classList.add('hidden');
+            } finally {
+                mats.forEach(m => { if (m && !m.isDeleted()) m.delete(); });
+            }
+        }
+
+        async function queueSliderProcessing() {
+            targetSigma = parseFloat(radiusSlider.value);
+            if (isProcessing) return; // The loop will pick up the new value automatically
+
+            isProcessing = true;
+            processingSpinner.classList.remove('hidden');
+            resultCanvas.style.opacity = 0.5; // Visual dimming indication while processing
+
+            while (targetSigma !== null) {
+                let currentSigma = targetSigma;
+                targetSigma = null; // Clear it to capture fresh slider inputs
+                try {
+                    await runFrequencySeparation(currentSigma);
+                } catch(err) {
+                    showError(err.message || "Failed during frequency separation.");
+                    break;
+                }
+            }
+
+            isProcessing = false;
+            processingSpinner.classList.add('hidden');
+            resultCanvas.style.opacity = 1;
+        }
+
+        async function runFrequencySeparation(sigma) {
+             if (!alignedBMat || !fullResImgA) return;
+
+            if (processedResultMat) processedResultMat.delete(); processedResultMat = null;
+            let mats = [];
+            try {
+                // Yield to allow UI spinner render
+                await new Promise(resolve => setTimeout(resolve, 50));
+                const ksize = new cv.Size(0, 0);
+
+                const lowFreqB = new cv.Mat(); mats.push(lowFreqB);
+                cv.GaussianBlur(alignedBMat, lowFreqB, ksize, sigma, 0, cv.BORDER_DEFAULT);
+
+                const lowFreqA = new cv.Mat(); const highFreqA = new cv.Mat();
+                mats.push(lowFreqA, highFreqA);
+                cv.GaussianBlur(fullResImgA, lowFreqA, ksize, sigma, 0, cv.BORDER_DEFAULT);
+                cv.subtract(fullResImgA, lowFreqA, highFreqA, new cv.Mat(), cv.CV_16S);
+
+                const result = new cv.Mat(); mats.push(result);
+                const lowFreqB_16S = new cv.Mat(); mats.push(lowFreqB_16S);
+                lowFreqB.convertTo(lowFreqB_16S, cv.CV_16S);
+                const final_16S = new cv.Mat(); mats.push(final_16S);
+                cv.add(lowFreqB_16S, highFreqA, final_16S, new cv.Mat(), cv.CV_16S);
+                final_16S.convertTo(result, cv.CV_8UC4);
+
+                processedResultMat = result.clone();
+                resultCanvas.width = fullResImgA.cols; resultCanvas.height = fullResImgA.rows;
+
+                cv.imshow('resultCanvas', processedResultMat);
+                resultCanvas.classList.remove('hidden');
+                downloadButton.classList.remove('hidden');
+                toggleViewButtons.classList.remove('hidden');
+                updateActiveButton('restored');
+            } finally {
+                mats.forEach(mat => { if (mat && !mat.isDeleted()) mat.delete(); });
+            }
+        }
+    </script>
+</body>
+</html>
