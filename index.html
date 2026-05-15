@@ -4,28 +4,89 @@
   <meta charset="UTF-8" />
   <link rel="icon" type="image/svg+xml" href="/vite.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Vibe Grimoire</title>
+  <title>Vibe Grimoire | Astro-Tech Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            neonCyan: '#00f2ff',
+            neonPurple: '#bc13fe',
+            bgDark: '#0a0b10',
+          },
+          fontFamily: {
+            outfit: ['Outfit', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
 </head>
-<body class="bg-gray-100 min-h-screen font-sans text-gray-900">
-  <div class="max-w-4xl mx-auto px-4 py-12">
-    <header class="mb-12 text-center">
-      <h1 class="text-4xl font-extrabold text-indigo-600 mb-4">Vibe Grimoire</h1>
-      <p class="text-lg text-gray-600">A collection of vibe-coded tools.</p>
+<body class="bg-bgDark min-h-screen font-outfit text-white">
+  <div class="bg-image"></div>
+  <div class="bg-overlay"></div>
+  <div class="scanline"></div>
+
+  <div class="max-w-5xl mx-auto px-4 py-16 relative z-10">
+    <header class="mb-16 text-center">
+      <div class="inline-block mb-4 px-3 py-1 glass rounded-full text-xs font-mono tracking-widest text-neonCyan uppercase animate-pulse">
+        System Active // Vibe Check: Optimal
+      </div>
+      <h1 class="text-6xl font-extrabold mb-4 tracking-tighter">
+        <span class="text-white">VIBE</span>
+        <span class="text-neonCyan neon-text neon-text-glow">GRIMOIRE</span>
+      </h1>
+      <p class="text-xl text-gray-400 max-w-2xl mx-auto">
+        A curated collection of arcane digital tools, forged in the fires of vibe-coding.
+      </p>
+      <div class="mt-8 flex justify-center gap-4">
+        <div class="h-1 w-24 bg-gradient-to-r from-transparent via-neonCyan to-transparent"></div>
+      </div>
     </header>
 
     <main>
-      <div class="bg-white shadow overflow-hidden sm:rounded-md">
-        <ul id="tool-list" class="divide-y divide-gray-200">
+      <div class="glass rounded-2xl overflow-hidden border border-white/10">
+        <div class="px-6 py-4 border-b border-white/10 flex items-center justify-between bg-white/5">
+          <div class="flex items-center gap-2">
+            <div class="w-3 h-3 rounded-full bg-red-500/50"></div>
+            <div class="w-3 h-3 rounded-full bg-yellow-500/50"></div>
+            <div class="w-3 h-3 rounded-full bg-green-500/50"></div>
+          </div>
+          <span class="text-xs font-mono text-gray-500">grimoire_registry.exe</span>
+          <div class="flex gap-4">
+            <i class="fa-solid fa-microchip text-neonCyan/30 text-xs"></i>
+          </div>
+        </div>
+        
+        <ul id="tool-list" class="divide-y divide-white/5">
           <!-- Tools will be injected here dynamically -->
+          <div class="p-12 text-center text-gray-500 animate-pulse">
+            <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-4 text-neonCyan"></i>
+            <p>Initializing grimoire modules...</p>
+          </div>
         </ul>
       </div>
     </main>
 
-    <footer class="mt-16 text-center text-sm text-gray-500">
-      <p>&copy; Vibe Grimoire</p>
+    <footer class="mt-20 text-center">
+      <div class="flex flex-col items-center gap-4">
+        <div class="text-gray-500 text-sm font-mono tracking-widest uppercase">
+          &copy; 2026 Astro-Tech Industries // DeepMind Division
+        </div>
+        <div class="flex gap-6 text-gray-400">
+          <a href="#" class="hover:text-neonCyan transition-colors"><i class="fa-brands fa-github"></i></a>
+          <a href="#" class="hover:text-neonCyan transition-colors"><i class="fa-brands fa-discord"></i></a>
+          <a href="#" class="hover:text-neonCyan transition-colors"><i class="fa-brands fa-x-twitter"></i></a>
+        </div>
+      </div>
     </footer>
   </div>
+
   <script type="module" src="/main.js"></script>
 </body>
 </html>

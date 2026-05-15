@@ -1,3 +1,113 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  --neon-cyan: #00f2ff;
+  --neon-purple: #bc13fe;
+  --bg-dark: #0a0b10;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-dark);
+  font-family: 'Outfit', 'Inter', sans-serif;
+  color: white;
+  overflow-x: hidden;
+}
+
+.bg-image {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url('/grimoire-bg.jpg');
+  background-size: cover;
+  background-position: center;
+  z-index: -2;
+  filter: brightness(0.4) contrast(1.1);
+}
+
+.bg-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at center, transparent 0%, rgba(10, 11, 16, 0.8) 100%);
+  z-index: -1;
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.glass-hover:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(0, 242, 255, 0.3);
+  box-shadow: 0 8px 32px 0 rgba(0, 242, 255, 0.1);
+  transform: translateY(-2px);
+  transition: all 0.3s ease;
+}
+
+.neon-text {
+  text-shadow: 0 0 10px rgba(0, 242, 255, 0.5), 0 0 20px rgba(0, 242, 255, 0.3);
+}
+
+.neon-border {
+  border-bottom: 2px solid var(--neon-cyan);
+  box-shadow: 0 4px 10px -2px rgba(0, 242, 255, 0.3);
+}
+
+@keyframes glow {
+  0% { text-shadow: 0 0 10px rgba(0, 242, 255, 0.5); }
+  50% { text-shadow: 0 0 20px rgba(0, 242, 255, 0.8), 0 0 30px rgba(0, 242, 255, 0.4); }
+  100% { text-shadow: 0 0 10px rgba(0, 242, 255, 0.5); }
+}
+
+.neon-text-glow {
+  animation: glow 3s ease-in-out infinite;
+}
+
+.font-mono {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* Custom scrollbar for premium feel */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(10, 11, 16, 0.5);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 242, 255, 0.2);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 242, 255, 0.4);
+}
+
+@keyframes scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+.scanline {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(to right, transparent, var(--neon-cyan), transparent);
+  opacity: 0.1;
+  z-index: 10;
+  animation: scanline 8s linear infinite;
+  pointer-events: none;
+}
