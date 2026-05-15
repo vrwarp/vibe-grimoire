@@ -13,16 +13,7 @@
     "fdir": "^6.5.0",
     "fraction.js": "^5.3.4",
     "lightningcss": "^1.32.0",
-    "lightningcss-linux-x64-gnu": "^1.32.0",
-    "nanoid": "^3.3.12",
-    "node-releases": "^2.0.44",
-    "picocolors": "^1.1.1",
-    "picomatch": "^4.0.4",
-    "postcss-value-parser": "^4.2.0",
-    "rolldown": "^1.0.1",
-    "source-map-js": "^1.2.1",
-    "tinyglobby": "^0.2.16",
-    "update-browserslist-db": "^1.2.3"
+    "nanoid": "^3.3.12"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.0",

@@ -64,7 +64,7 @@ if (toolListEl) {
               </div>
               <div class="ml-6">
                 <p class="text-xl font-semibold text-gray-200 group-hover:text-white transition-colors tracking-tight">${displayName}</p>
-                <p class="text-xs font-mono text-gray-500 group-hover:text-neonCyan/70 transition-colors uppercase tracking-widest mt-1">Module // ${folderName.replace(/-/g, '_')}</p>
+                <p class="text-xs font-mono text-neonCyan/80 group-hover:text-neonCyan transition-colors uppercase tracking-widest mt-1">Module // ${folderName.replace(/-/g, '_')}</p>
               </div>
             </div>
             <div class="flex items-center gap-4">
