@@ -30,11 +30,7 @@ function getRollupInputs() {
 }
 
 export default defineConfig({
-  // Use repository name for base if deploying to GitHub Pages
-  // You might want to update this to match your repository name
-  base: process.env.GITHUB_REPOSITORY
-    ? `/${process.env.GITHUB_REPOSITORY.split('/')[1]}/`
-    : '/',
+  base: '/',
   build: {
     rollupOptions: {
       input: getRollupInputs(),
