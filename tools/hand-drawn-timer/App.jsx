@@ -41,7 +41,21 @@ export default function HandDrawnTimer() {
           setIsRunning(true);
           setMode('running');
           setHideControls(true);
+        } else {
+          // Valid format but invalid time values
+          setIsRunning(false);
+          setRemainingTime(0);
+          setTotalDuration(0);
+          setMode('setup');
+          setHideControls(false);
         }
+      } else {
+        // No match found
+        setIsRunning(false);
+        setRemainingTime(0);
+        setTotalDuration(0);
+        setMode('setup');
+        setHideControls(false);
       }
     };
 
@@ -141,7 +155,7 @@ export default function HandDrawnTimer() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 paper-bg text-charcoal relative overflow-hidden">
       <div className="absolute top-4 left-4 z-10 pointer-events-auto" style={{ zIndex: 10 }}>
-        <a href="../../" className="text-blue-600 hover:text-blue-800 font-medium inline-flex items-center">
+        <a href="../../" className="font-sketch-ui text-2xl sketch-border px-4 py-2 hover:bg-black/5 inline-flex items-center transition-all text-charcoal">
           <i className="fa-solid fa-arrow-left mr-2"></i> Back to Tools
         </a>
       </div>
@@ -234,7 +248,7 @@ export default function HandDrawnTimer() {
                 type="text"
                 value={inputHours}
                 onChange={(e) => handleInput(e, setInputHours, 99)}
-                className="w-24 sm:w-32 md:w-48 sketch-input text-charcoal placeholder-gray-400 tracking-widest pl-2"
+                className="w-[1.2em] sketch-input text-charcoal placeholder-gray-400"
                 placeholder="00"
               />
               <span className="pb-4 mx-1 sm:mx-2">:</span>
@@ -242,7 +256,7 @@ export default function HandDrawnTimer() {
                 type="text"
                 value={inputMinutes}
                 onChange={(e) => handleInput(e, setInputMinutes, 59)}
-                className="w-24 sm:w-32 md:w-48 sketch-input text-charcoal tracking-widest pl-2"
+                className="w-[1.2em] sketch-input text-charcoal"
                 placeholder="00"
               />
               <span className="pb-4 mx-1 sm:mx-2">:</span>
@@ -250,23 +264,23 @@ export default function HandDrawnTimer() {
                 type="text"
                 value={inputSeconds}
                 onChange={(e) => handleInput(e, setInputSeconds, 59)}
-                className="w-24 sm:w-32 md:w-48 sketch-input text-charcoal tracking-widest pl-2"
+                className="w-[1.2em] sketch-input text-charcoal"
                 placeholder="00"
               />
             </>
           ) : (
             <>
-              <div className="flex justify-center w-24 sm:w-32 md:w-48">
+              <div className="flex justify-center w-[1.2em]">
                 <span className="inline-block w-1/2 text-center">{displayTime.h[0]}</span>
                 <span className="inline-block w-1/2 text-center">{displayTime.h[1]}</span>
               </div>
               <span className="pb-4 mx-1 sm:mx-2">:</span>
-              <div className="flex justify-center w-24 sm:w-32 md:w-48">
+              <div className="flex justify-center w-[1.2em]">
                 <span className="inline-block w-1/2 text-center">{displayTime.m[0]}</span>
                 <span className="inline-block w-1/2 text-center">{displayTime.m[1]}</span>
               </div>
               <span className="pb-4 mx-1 sm:mx-2">:</span>
-              <div className="relative flex justify-center w-24 sm:w-32 md:w-48">
+              <div className="relative flex justify-center w-[1.2em]">
                 <span className="inline-block w-1/2 text-center">{displayTime.s[0]}</span>
                 <span className="inline-block w-1/2 text-center">{displayTime.s[1]}</span>
                 {isRunning && <div className="action-lines text-charcoal font-sketch-ui font-bold"></div>}
