@@ -54,9 +54,24 @@ export default function HandDrawnTimer() {
 
   // Handle countdown logic
   useEffect(() => {
-    let intervalId;
+    let timeoutId;
     if (isRunning && remainingTime > 0) {
-      intervalId = setInterval(() => {
+      let delay = 1000;
+      if (isNonlinear) {
+        const passedTicks = totalDuration - remainingTime;
+        const n3 = Math.max(0, Math.floor((totalDuration - 5) / 3));
+        const n1 = n3 * 2;
+
+        if (passedTicks < n1) {
+          delay = 900;
+        } else if (passedTicks >= totalDuration - n3) {
+          delay = 1200;
+        } else {
+          delay = 1000;
+        }
+      }
+
+      timeoutId = setTimeout(() => {
         setRemainingTime((prev) => {
           if (prev <= 1) {
             setIsRunning(false);
@@ -65,10 +80,10 @@ export default function HandDrawnTimer() {
           }
           return prev - 1;
         });
-      }, 1000);
+      }, delay);
     }
-    return () => clearInterval(intervalId);
-  }, [isRunning, remainingTime]);
+    return () => clearTimeout(timeoutId);
+  }, [isRunning, remainingTime, isNonlinear, totalDuration]);
 
   const startTimer = () => {
     if (mode === 'setup') {
@@ -119,17 +134,9 @@ export default function HandDrawnTimer() {
     setter(val);
   };
 
-  let nonlinearRemainingTime = (isNonlinear && totalDuration > 0)
-    ? Math.round(Math.pow(remainingTime, 2) / totalDuration)
-    : remainingTime;
-
-  if (isNonlinear && remainingTime > 0 && nonlinearRemainingTime === 0) {
-    nonlinearRemainingTime = 1;
-  }
-
   const displayTime = mode === 'setup'
     ? { h: inputHours.padStart(2, '0'), m: inputMinutes.padStart(2, '0'), s: inputSeconds.padStart(2, '0') }
-    : formatTime(nonlinearRemainingTime);
+    : formatTime(remainingTime);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 paper-bg text-charcoal relative overflow-hidden">
