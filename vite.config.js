@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
 import { readdirSync } from 'fs';
+import react from '@vitejs/plugin-react';
 
 // Helper function to get all tool directories
 function getTools() {
@@ -31,6 +32,7 @@ function getRollupInputs() {
 
 export default defineConfig({
   base: '/',
+  plugins: [react()],
   build: {
     rollupOptions: {
       input: getRollupInputs(),
