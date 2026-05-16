@@ -1,15 +1,16 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
 import { readdirSync } from 'fs';
+import react from '@vitejs/plugin-react';
 
 // Helper function to get all tool directories
 function getTools() {
-  const toolsDir = resolve(__dirname, 'tools');
+  const toolsDir = resolve(import.meta.dirname, 'tools');
   try {
     return readdirSync(toolsDir, { withFileTypes: true })
       .filter((dirent) => dirent.isDirectory())
       .map((dirent) => dirent.name);
-  } catch (e) {
+  } catch {
     // Return empty if tools directory doesn't exist yet
     return [];
   }
@@ -18,12 +19,12 @@ function getTools() {
 // Dynamically generate input for Rollup
 function getRollupInputs() {
   const inputs = {
-    main: resolve(__dirname, 'index.html'),
+    main: resolve(import.meta.dirname, 'index.html'),
   };
 
   const tools = getTools();
   tools.forEach((tool) => {
-    inputs[tool] = resolve(__dirname, `tools/${tool}/index.html`);
+    inputs[tool] = resolve(import.meta.dirname, `tools/${tool}/index.html`);
   });
 
   return inputs;
@@ -31,6 +32,7 @@ function getRollupInputs() {
 
 export default defineConfig({
   base: '/',
+  plugins: [react()],
   build: {
     rollupOptions: {
       input: getRollupInputs(),
