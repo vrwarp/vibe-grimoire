@@ -24,30 +24,30 @@ const TEXTBOOK_SAMPLES = [
     title: "Quiet Night Thought (静夜思)",
     author: "Li Bai (李白)",
     lines: [
-      { hanzi: "床前明月光", pinyin: ["chuáng", "qián", "míng", "yuè", "guāng"], bopomofo: ["ㄔㄨㄤˊ", "ㄑㄧㄢˊ", "ㄇㄧㄥˊ", "ㄩㄝˋ", "ㄍㄨㄤ"] },
-      { hanzi: "疑是地上霜", pinyin: ["yí", "shì", "dì", "shàng", "shuāng"], bopomofo: ["ㄧˊ", "ㄕˋ", "ㄉㄧˋ", "ㄕㄤˋ", "ㄕㄨㄤ"] },
-      { hanzi: "举头望明月", pinyin: ["jǔ", "tóu", "wàng", "míng", "yuè"], bopomofo: ["ㄐㄩˇ", "ㄊㄡˊ", "ㄨㄤˋ", "ㄇㄧˊ", "ㄩㄝˋ"] },
-      { hanzi: "低头思故乡", pinyin: ["dī", "tóu", "sī", "gù", "xiāng"], bopomofo: ["ㄉㄧ", "ㄊㄡˊ", "ㄙ", "ㄍㄨˋ", "ㄒㄧㄤ"] }
+      { hanzi: "床前明月光", pinyin: ["chuáng", "qián", "míng", "yuè", "guāng"] },
+      { hanzi: "疑是地上霜", pinyin: ["yí", "shì", "dì", "shàng", "shuāng"] },
+      { hanzi: "举头望明月", pinyin: ["jǔ", "tóu", "wàng", "míng", "yuè"] },
+      { hanzi: "低头思故乡", pinyin: ["dī", "tóu", "sī", "gù", "xiāng"] }
     ]
   },
   {
     title: "Spring Dawn (春晓)",
     author: "Meng Haoran (孟浩然)",
     lines: [
-      { hanzi: "春眠不觉晓", pinyin: ["chūn", "mián", "bù", "jué", "xiǎo"], bopomofo: ["ㄔㄨㄣ", "ㄇㄧㄢˊ", "ㄅㄨˋ", "ㄐㄩㄝˊ", "ㄒㄧㄠˇ"] },
-      { hanzi: "处处闻啼鸟", pinyin: ["chù", "chù", "wén", "tí", "niǎo"], bopomofo: ["ㄔㄨˋ", "ㄔㄨˋ", "ㄨㄣˊ", "ㄊㄧˊ", "ㄋㄧㄠˇ"] },
-      { hanzi: "夜来风雨声", pinyin: ["yè", "lái", "fēng", "yǔ", "shēng"], bopomofo: ["ㄧㄝˋ", "ㄌㄞˊ", "ㄈㄥ", "ㄩˇ", "ㄕㄥ"] },
-      { hanzi: "花落知多少", pinyin: ["huā", "luò", "zhī", "duō", "shǎo"], bopomofo: ["ㄏㄨㄚ", "ㄌㄨㄛˋ", "ㄓ", "ㄉㄨㄛ", "ㄕㄠˇ"] }
+      { hanzi: "春眠不觉晓", pinyin: ["chūn", "mián", "bù", "jué", "xiǎo"] },
+      { hanzi: "处处闻啼鸟", pinyin: ["chù", "chù", "wén", "tí", "niǎo"] },
+      { hanzi: "夜来风雨声", pinyin: ["yè", "lái", "fēng", "yǔ", "shēng"] },
+      { hanzi: "花落知多少", pinyin: ["huā", "luò", "zhī", "duō", "shǎo"] }
     ]
   }
 ];
 
 const PRESETS = [
-  { hanzi: "窗", pinyin: "chuāng", bopomofo: "ㄔㄨㄤˉ", desc: "6-letter long horizontal syllable containing medial, nucleus, and nasal coda." },
-  { hanzi: "双", pinyin: "shuāng", bopomofo: "ㄕㄨㄤˉ", desc: "Complex double-consonant initial with nasal diphthong ending." },
-  { hanzi: "强", pinyin: "qiáng", bopomofo: "ㄑㄧㄤˊ", desc: "5-letter nasal syllable prone to adjacent horizontal collision." },
-  { hanzi: "绿", pinyin: "lǜ", bopomofo: "ㄌㄩˋ", desc: "Syllable utilizing a high-diacritic umlaut stacking challenge." },
-  { hanzi: "知", pinyin: "zhī", bopomofo: "ㄓˉ", desc: "Standard short syllable to contrast alongside extended syllables." }
+  { hanzi: "窗", pinyin: "chuāng", desc: "6-letter long horizontal syllable containing medial, nucleus, and nasal coda." },
+  { hanzi: "双", pinyin: "shuāng", desc: "Complex double-consonant initial with nasal diphthong ending." },
+  { hanzi: "强", pinyin: "qiáng", desc: "5-letter nasal syllable prone to adjacent horizontal collision." },
+  { hanzi: "绿", pinyin: "lǜ", desc: "Syllable utilizing a high-diacritic umlaut stacking challenge." },
+  { hanzi: "知", pinyin: "zhī", desc: "Standard short syllable to contrast alongside extended syllables." }
 ];
 
 const AMAZING_GRACE_SLIDES = [
@@ -56,10 +56,10 @@ const AMAZING_GRACE_SLIDES = [
     type: "Verse 1",
     english: "Amazing grace, how sweet the sound, that saved a wretch like me.",
     lines: [
-      { hanzi: "奇异恩典何等甘甜", pinyin: ["qí", "yì", "ēn", "diǎn", "hé", "děng", "gān", "tián"], bopomofo: ["ㄑㄧˊ", "ㄧˋ", "ㄣ", "ㄉㄧㄢˇ", "ㄏㄜˊ", "ㄉㄥˇ", "ㄍㄢ", "ㄊㄧㄢˊ"] },
-      { hanzi: "我罪已得赦免", pinyin: ["wǒ", "zuì", "yǐ", "dé", "shè", "miǎn"], bopomofo: ["ㄨㄛˇ", "ㄗㄨㄟˋ", "ㄧˇ", "ㄉㄜˊ", "ㄕㄜˋ", "ㄇㄧㄢˇ"] },
-      { hanzi: "前我失丧今被寻回", pinyin: ["qián", "wǒ", "shī", "sàng", "jīn", "bèi", "xún", "huí"], bopomofo: ["ㄑㄧㄢˊ", "ㄨㄛˇ", "ㄕ", "ㄙㄤˋ", "ㄐㄧㄣ", "ㄅㄟˋ", "ㄒㄩㄣˊ", "ㄏㄨㄟˊ"] },
-      { hanzi: "瞎眼今得看见", pinyin: ["xiā", "yǎn", "jīn", "dé", "kàn", "jiàn"], bopomofo: ["ㄒㄧㄚ", "ㄧǎn", "ㄐㄧㄣ", "ㄉㄜˊ", "ㄎㄢˋ", "ㄐㄧㄢˋ"] }
+      { hanzi: "奇异恩典何等甘甜", pinyin: ["qí", "yì", "ēn", "diǎn", "hé", "děng", "gān", "tián"] },
+      { hanzi: "我罪已得赦免", pinyin: ["wǒ", "zuì", "yǐ", "dé", "shè", "miǎn"] },
+      { hanzi: "前我失丧今被寻回", pinyin: ["qián", "wǒ", "shī", "sàng", "jīn", "bèi", "xún", "huí"] },
+      { hanzi: "瞎眼今得看见", pinyin: ["xiā", "yǎn", "jīn", "dé", "kàn", "jiàn"] }
     ]
   },
   {
@@ -67,10 +67,10 @@ const AMAZING_GRACE_SLIDES = [
     type: "Verse 2",
     english: "'Twas grace that taught my heart to fear, and grace my fears relieved.",
     lines: [
-      { hanzi: "如此恩典使我敬畏", pinyin: ["rú", "cǐ", "ēn", "diǎn", "shǐ", "wǒ", "jìng", "wèi"], bopomofo: ["ㄖㄨˊ", "ㄘˇ", "ㄣ", "ㄉㄧㄢˇ", "ㄕˇ", "ㄨㄛˇ", "ㄐㄧㄥˋ", "ㄨㄟˋ"] },
-      { hanzi: "使我心得安慰", pinyin: ["shǐ", "wǒ", "xīn", "dé", "ān", "wèi"], bopomofo: ["ㄕˇ", "ㄨㄛˇ", "ㄒㄧㄣ", "ㄉㄜˊ", "ㄢ", "ㄨㄟˋ"] },
-      { hanzi: "初信之时即蒙恩惠", pinyin: ["chū", "xìn", "zhī", "shí", "jí", "méng", "ēn", "huì"], bopomofo: ["ㄔㄨ", "ㄒㄧㄣˋ", "ㄓ", "ㄕˊ", "ㄐㄧˊ", "ㄇㄥˊ", "ㄣ", "ㄏㄨㄟˋ"] },
-      { hanzi: "真是何等宝贵", pinyin: ["zhēn", "shì", "hé", "děng", "bǎo", "guì"], bopomofo: ["ㄓㄣ", "ㄕˋ", "ㄏㄜˊ", "ㄉㄥˇ", "ㄅㄠˇ", "ㄍㄨㄟˋ"] }
+      { hanzi: "如此恩典使我敬畏", pinyin: ["rú", "cǐ", "ēn", "diǎn", "shǐ", "wǒ", "jìng", "wèi"] },
+      { hanzi: "使我心得安慰", pinyin: ["shǐ", "wǒ", "xīn", "dé", "ān", "wèi"] },
+      { hanzi: "初信之时即蒙恩惠", pinyin: ["chū", "xìn", "zhī", "shí", "jí", "méng", "ēn", "huì"] },
+      { hanzi: "真是何等宝贵", pinyin: ["zhēn", "shì", "hé", "děng", "bǎo", "guì"] }
     ]
   },
   {
@@ -78,10 +78,10 @@ const AMAZING_GRACE_SLIDES = [
     type: "Verse 3",
     english: "Through many dangers, toils and snares, I have already come.",
     lines: [
-      { hanzi: "许多危险试炼网罗", pinyin: ["xǔ", "duō", "wēi", "xiǎn", "shì", "liàn", "wǎng", "luó"], bopomofo: ["ㄒㄩˇ", "ㄉㄨㄛ", "ㄨㄟ", "ㄒㄧㄢˇ", "ㄕˋ", "ㄌㄧㄢˋ", "ㄨㄤˇ", "ㄌㄨㄛˊ"] },
-      { hanzi: "我已安然经过", pinyin: ["wǒ", "yǐ", "ān", "rán", "jīng", "guò"], bopomofo: ["ㄨㄛˇ", "ㄧˇ", "ㄢ", "ㄖㄢˊ", "ㄐㄧㄥ", "ㄍㄨㄛˋ"] },
-      { hanzi: "靠主恩典安全不怕", pinyin: ["kào", "zhǔ", "ēn", "diǎn", "ān", "quán", "bú", "pà"], bopomofo: ["ㄎㄠˋ", "zhǔ", "ㄣ", "ㄉㄧㄢˇ", "ㄢ", "ㄑㄩㄢˊ", "ㄅㄨˊ", "ㄆㄚˋ"] },
-      { hanzi: "更引导我归家", pinyin: ["gèng", "yǐn", "dǎo", "wǒ", "guī", "jiā"], bopomofo: ["ㄍㄥˋ", "ㄧㄣˇ", "ㄉㄠˇ", "ㄨㄛˇ", "ㄍㄨㄟ", "ㄐㄧㄚ"] }
+      { hanzi: "许多危险试炼网罗", pinyin: ["xǔ", "duō", "wēi", "xiǎn", "shì", "liàn", "wǎng", "luó"] },
+      { hanzi: "我已安然经过", pinyin: ["wǒ", "yǐ", "ān", "rán", "jīng", "guò"] },
+      { hanzi: "靠主恩典安全不怕", pinyin: ["kào", "zhǔ", "ēn", "diǎn", "ān", "quán", "bú", "pà"] },
+      { hanzi: "更引导我归家", pinyin: ["gèng", "yǐn", "dǎo", "wǒ", "guī", "jiā"] }
     ]
   },
   {
@@ -89,10 +89,10 @@ const AMAZING_GRACE_SLIDES = [
     type: "Verse 4",
     english: "When we've been there ten thousand years, bright shining as the sun.",
     lines: [
-      { hanzi: "将来禧年圣徒欢聚", pinyin: ["jiāng", "lái", "xǐ", "nián", "shèng", "tú", "huān", "jù"], bopomofo: ["ㄐㄧㄤ", "ㄌㄞˊ", "ㄒㄧˇ", "ㄋㄧㄢˊ", "ㄕㄥˋ", "ㄊㄨˊ", "ㄏㄨㄢ", "ㄐㄩˇ"] },
-      { hanzi: "恩光爱谊千年", pinyin: ["ēn", "guāng", "ài", "yì", "qiān", "nián"], bopomofo: ["ㄣ", "ㄍㄨㄤ", "ㄞˋ", "ㄧˋ", "ㄑㄧㄢ", "ㄋㄧㄢˊ"] },
-      { hanzi: "喜乐颂赞在父座前", pinyin: ["xǐ", "lè", "sòng", "zàn", "zài", "fù", "zuò", "qián"], bopomofo: ["ㄒㄧˇ", "ㄌㄜˋ", "ㄙㄨㄥˋ", "ㄗㄢˋ", "ㄗㄞˋ", "ㄈㄨˋ", "ㄗㄨㄛˋ", "ㄑㄧㄢˊ"] },
-      { hanzi: "深望那日快现", pinyin: ["shēn", "wàng", "nà", "rì", "kuài", "xiàn"], bopomofo: ["ㄕㄣ", "ㄨㄤˋ", "ㄋㄚˋ", "ㄖˋ", "ㄎㄨㄞˋ", "ㄒㄧㄢˋ"] }
+      { hanzi: "将来禧年圣徒欢聚", pinyin: ["jiāng", "lái", "xǐ", "nián", "shèng", "tú", "huān", "jù"] },
+      { hanzi: "恩光爱谊千年", pinyin: ["ēn", "guāng", "ài", "yì", "qiān", "nián"] },
+      { hanzi: "喜乐颂赞在父座前", pinyin: ["xǐ", "lè", "sòng", "zàn", "zài", "fù", "zuò", "qián"] },
+      { hanzi: "深望那日快现", pinyin: ["shēn", "wàng", "nà", "rì", "kuài", "xiàn"] }
     ]
   }
 ];
@@ -134,7 +134,7 @@ const WORSHIP_THEMES = {
 
 export default function App() {
   const [activePreset, setActivePreset] = useState(PRESETS[0]);
-  const [layoutMethod, setLayoutMethod] = useState('variable'); // 'variable' | 'overhang' | 'zhuyin'
+  const [layoutMethod, setLayoutMethod] = useState('variable'); // 'variable' | 'overhang'
   const [activeTab, setActiveTab] = useState('worship'); // Tab focus
 
   // Custom micro-tuning controls
@@ -186,7 +186,7 @@ export default function App() {
       return {
         hanzi: customHanzi.trim().charAt(0),
         pinyin: customPinyin.trim().toLowerCase(),
-        bopomofo: "ㄅㄧㄢˋ",
+
         desc: "Custom User Syllable Entry"
       };
     }
@@ -244,8 +244,7 @@ export default function App() {
       letterSpacing: `${activeTracking}em`,
       transform: `scaleX(${activeWidth / 100})`,
       transformOrigin: 'bottom center',
-      whiteSpace: 'nowrap',
-    };
+      whiteSpace: 'nowrap' };
   };
 
   const getWeightLabel = (w) => {
@@ -265,6 +264,12 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans antialiased selection:bg-indigo-500 selection:text-white">
 
+      <div className="px-6 pt-3 bg-slate-950">
+        <a href="../../" className="text-blue-400 hover:text-blue-300 font-medium inline-flex items-center text-sm">
+            <i className="fa-solid fa-arrow-left mr-2"></i> Back to Tools
+        </a>
+      </div>
+
       {/* HEADER BAR */}
       <header className="border-b border-slate-850 bg-slate-900/90 backdrop-blur-md px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sticky top-0 z-50">
         <div className="flex items-center space-x-3">
@@ -273,7 +278,7 @@ export default function App() {
           </div>
           <div>
             <h1 className="text-base font-bold tracking-tight text-white flex items-center gap-2">
-              Pinyin & Zhuyin Typography Lab
+              Pinyin Typography Lab
               <span className="text-[10px] bg-indigo-500/10 text-indigo-300 font-mono px-2 py-0.5 rounded border border-indigo-500/20 font-bold uppercase tracking-wider font-semibold">V4.7 Offset Precision</span>
             </h1>
             <p className="text-xs text-slate-400">Micro-tune horizontal character scaling, tracking compensation, and vertical Pinyin offsets dynamically.</p>
@@ -399,25 +404,7 @@ export default function App() {
                 </div>
               </button>
 
-              {/* Method C: Zhuyin Stacking */}
-              <button
-                onClick={() => setLayoutMethod('zhuyin')}
-                className={`p-3 rounded-xl border text-left transition-all flex items-start gap-3 ${
-                  layoutMethod === 'zhuyin'
-                    ? 'bg-gradient-to-r from-amber-950/40 to-slate-900 border-amber-500/60 text-white'
-                    : 'bg-slate-950 border-slate-850 text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <div className="mt-1 h-4 w-4 rounded-full border-2 border-amber-500 flex items-center justify-center">
-                  {layoutMethod === 'zhuyin' && <div className="h-1.5 w-1.5 rounded-full bg-amber-400"></div>}
-                </div>
-                <div>
-                  <span className="font-bold text-xs block text-amber-300">Strategy C: Bopomofo Side-Stacking</span>
-                  <span className="text-[11px] text-slate-400 block mt-0.5 leading-relaxed">
-                    Side-stacks phonetic annotation labels on the right-hand side to bypass horizontal compression demands entirely.
-                  </span>
-                </div>
-              </button>
+
 
             </div>
           </div>
@@ -738,8 +725,7 @@ export default function App() {
                         >
                           {line.hanzi.split("").map((char, cIdx) => {
                             const pinyinStr = line.pinyin[cIdx] || "";
-                            const bopomofoStr = line.bopomofo[cIdx] || "";
-                            const isLong = pinyinStr.length >= 5;
+                                                        const isLong = pinyinStr.length >= 5;
 
                             return (
                               <div
@@ -748,7 +734,7 @@ export default function App() {
                                 style={{ width: `${gridSquareSize * 1.1 * worshipTextScale}px` }}
                               >
                                 {/* Pinyin Annotation Layer with dynamic Vertical Offset customizability */}
-                                {layoutMethod !== 'zhuyin' && (
+
                                   <span
                                     className="absolute text-center tracking-normal font-sans"
                                     style={{
@@ -761,7 +747,7 @@ export default function App() {
                                   >
                                     {pinyinStr}
                                   </span>
-                                )}
+
 
                                 {/* Base Chinese Character */}
                                 <div
@@ -774,22 +760,7 @@ export default function App() {
                                 >
                                   {char}
 
-                                  {/* Lateral Zhuyin Stacking Option */}
-                                  {layoutMethod === 'zhuyin' && (
-                                    <div
-                                      className="absolute h-full flex flex-col justify-center items-center font-mono leading-none font-medium opacity-90"
-                                      style={{
-                                        right: `-${gridSquareSize * 0.4 * worshipTextScale}px`,
-                                        fontSize: `${gridSquareSize * 0.28 * worshipTextScale}px`,
-                                        width: `${gridSquareSize * 0.3 * worshipTextScale}px`,
-                                        color: '#fbbf24'
-                                      }}
-                                    >
-                                      {bopomofoStr.split("").map((bChar, bIdx) => (
-                                        <span key={bIdx} className="block">{bChar}</span>
-                                      ))}
-                                    </div>
-                                  )}
+
                                 </div>
                               </div>
                             );
@@ -936,8 +907,7 @@ export default function App() {
 
                       {line.hanzi.split("").map((char, cIdx) => {
                         const pinyinStr = line.pinyin[cIdx];
-                        const bopomofoStr = line.bopomofo[cIdx];
-                        const isLong = pinyinStr.length >= 5;
+                                                const isLong = pinyinStr.length >= 5;
 
                         return (
                           <div
@@ -947,19 +917,18 @@ export default function App() {
                           >
 
                             {/* Standard / Variable / Overhang Pinyin Rendering */}
-                            {layoutMethod !== 'zhuyin' && (
+
                               <span
                                 className="absolute text-center select-none font-sans transition-all leading-none"
                                 style={{
                                   // Customizable Offset applied on vertical position of the textbook annotation
                                   top: `-${pinyinFontSize + 8 + pinyinOffset}px`,
                                   ...getPinyinStyle(pinyinStr, true),
-                                  color: isLong ? '#a5b4fc' : '#cbd5e1',
-                                }}
+                                  color: isLong ? '#a5b4fc' : '#cbd5e1' }}
                               >
                                 {pinyinStr}
                               </span>
-                            )}
+
 
                             {/* Standard Grid Square with dynamic width/height limits */}
                             <div
@@ -981,21 +950,7 @@ export default function App() {
 
                               <span className="leading-none z-10">{char}</span>
 
-                              {/* Lateral Zhuyin Column */}
-                              {layoutMethod === 'zhuyin' && (
-                                <div
-                                  className="absolute h-full flex flex-col justify-center items-center font-mono leading-none text-amber-300"
-                                  style={{
-                                    right: `-${gridSquareSize * 0.35}px`,
-                                    fontSize: `${gridSquareSize * 0.2}px`,
-                                    width: `${gridSquareSize * 0.25}px`
-                                  }}
-                                >
-                                  {bopomofoStr.split("").map((bChar, bIdx) => (
-                                    <span key={bIdx} className="block">{bChar}</span>
-                                  ))}
-                                </div>
-                              )}
+
 
                             </div>
 
@@ -1062,15 +1017,14 @@ export default function App() {
                 <div className="relative flex flex-col items-center justify-center">
 
                   {/* Dynamic Top Pinyin Display */}
-                  {layoutMethod !== 'zhuyin' && (
+
                     <div
                       className="absolute select-none font-sans transition-all text-center"
                       style={{
                         // Customizable Offset applied to the isolated Sandbox mode as well
                         top: `-${(hanziSize * 0.48) + pinyinOffset * 1.5}px`,
                         ...getPinyinStyle(displayData.pinyin, false),
-                        color: '#a5b4fc',
-                      }}
+                        color: '#a5b4fc' }}
                     >
                       {displayData.pinyin}
 
@@ -1081,7 +1035,7 @@ export default function App() {
                         </div>
                       )}
                     </div>
-                  )}
+
 
                   {/* Chinese Character Base Frame Underlay */}
                   <div
@@ -1090,8 +1044,7 @@ export default function App() {
                       width: `${hanziSize}px`,
                       height: `${hanziSize}px`,
                       fontSize: `${hanziSize * 0.8}px`,
-                      backgroundColor: 'rgba(2, 6, 23, 0.4)',
-                    }}
+                      backgroundColor: 'rgba(2, 6, 23, 0.4)' }}
                   >
                     {/* Visual Quadrant Lines */}
                     {showGuides && (
@@ -1105,31 +1058,6 @@ export default function App() {
                     <span className="z-10 leading-none">
                       {displayData.hanzi}
                     </span>
-
-                    {/* Side-Stacked Bopomofo */}
-                    {layoutMethod === 'zhuyin' && (
-                      <div
-                        className="absolute flex flex-col items-center justify-center text-amber-300 font-mono select-none animate-fade-in"
-                        style={{
-                          right: `-${hanziSize * 0.28}px`,
-                          height: '100%',
-                          width: `${hanziSize * 0.22}px`,
-                          fontSize: `${hanziSize * 0.22}px`,
-                          lineHeight: 1.1,
-                        }}
-                      >
-                        {displayData.bopomofo.split("").map((char, index) => (
-                          <span key={index} className="relative">
-                            {char}
-                          </span>
-                        ))}
-
-                        {showGuides && (
-                          <div className="absolute inset-y-0 -left-1 border-l border-dashed border-amber-500/20 pointer-events-none"></div>
-                        )}
-                      </div>
-                    )}
-
                   </div>
 
                 </div>
@@ -1147,7 +1075,7 @@ export default function App() {
                     <span className="block text-slate-500">Active Layout Strategy:</span>
                     {layoutMethod === 'variable' && <span className="text-indigo-300 font-semibold">Variable Squeeze Compensation</span>}
                     {layoutMethod === 'overhang' && <span className="text-teal-300 font-semibold font-semibold">W3C 0.5em Overhang Boundary</span>}
-                    {layoutMethod === 'zhuyin' && <span className="text-amber-300 font-semibold font-semibold font-semibold">Taiwanese Lateral Zhuyin Block</span>}
+
                   </div>
                   <div>
                     <span className="block text-slate-500">Horizontal Fit Security:</span>
@@ -1210,8 +1138,7 @@ export default function App() {
                 >
                   {line.hanzi.split("").map((char, cIdx) => {
                     const pinyinStr = line.pinyin[cIdx] || "";
-                    const bopomofoStr = line.bopomofo[cIdx] || "";
-                    const isLong = pinyinStr.length >= 5;
+                                        const isLong = pinyinStr.length >= 5;
 
                     return (
                       <div
@@ -1220,7 +1147,7 @@ export default function App() {
                         style={{ width: `${gridSquareSize * 1.5 * worshipTextScale}px` }}
                       >
                         {/* Pinyin Annotation Layer with dynamic Vertical Offset customizability (compensated for fullscreen mode scale) */}
-                        {layoutMethod !== 'zhuyin' && (
+
                           <span
                             className="absolute text-center tracking-normal font-sans"
                             style={{
@@ -1233,7 +1160,7 @@ export default function App() {
                           >
                             {pinyinStr}
                           </span>
-                        )}
+
 
                         {/* Base Chinese Character */}
                         <div
@@ -1246,22 +1173,7 @@ export default function App() {
                         >
                           {char}
 
-                          {/* Lateral Zhuyin Stacking Option */}
-                          {layoutMethod === 'zhuyin' && (
-                            <div
-                              className="absolute h-full flex flex-col justify-center items-center font-mono leading-none font-medium opacity-90"
-                              style={{
-                                right: `-${gridSquareSize * 0.55 * worshipTextScale}px`,
-                                fontSize: `${gridSquareSize * 0.45 * worshipTextScale}px`,
-                                width: `${gridSquareSize * 0.45 * worshipTextScale}px`,
-                                color: '#fbbf24'
-                              }}
-                            >
-                              {bopomofoStr.split("").map((bChar, bIdx) => (
-                                <span key={bIdx} className="block">{bChar}</span>
-                              ))}
-                            </div>
-                          )}
+
                         </div>
                       </div>
                     );
@@ -1306,7 +1218,7 @@ export default function App() {
 
       {/* FOOTER */}
       <footer className="border-t border-slate-850 bg-slate-900/60 p-4 text-center text-xs text-slate-500">
-        Pinyin Ruby & Zhuyin Layout Laboratory V4.7 • Custom Vertical Offset Metrics Engine Enabled
+        Pinyin Ruby Layout Laboratory V4.7 • Custom Vertical Offset Metrics Engine Enabled
       </footer>
 
     </div>
