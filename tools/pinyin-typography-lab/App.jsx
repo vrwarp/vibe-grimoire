@@ -273,11 +273,11 @@ export default function App() {
       {/* HEADER BAR */}
       <header className="border-b border-slate-850 bg-slate-900/90 backdrop-blur-md px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sticky top-0 z-50">
         <div className="flex items-center space-x-3">
-          <div className="h-10 w-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold tracking-tight text-xl shadow-lg shadow-indigo-500/20">
+          <div className="h-10 w-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold tracking-tight text-xl shadow-lg shadow-indigo-500/20 shrink-0">
             Pÿ
           </div>
           <div>
-            <h1 className="text-base font-bold tracking-tight text-white flex items-center gap-2">
+            <h1 className="text-base font-bold tracking-tight text-white flex items-center flex-wrap gap-2">
               Pinyin Typography Lab
               <span className="text-[10px] bg-indigo-500/10 text-indigo-300 font-mono px-2 py-0.5 rounded border border-indigo-500/20 font-bold uppercase tracking-wider font-semibold">V4.7 Offset Precision</span>
             </h1>
@@ -285,14 +285,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* REGRESSION TARGET TRACKING */}
-        <div className="flex flex-col sm:items-end text-xs">
-          <span className="text-slate-500 font-mono">Reference State Inspected:</span>
-          <span className="text-amber-400 font-semibold font-mono flex items-center gap-1.5 mt-0.5">
-            <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse"></span>
-            Screenshot 2026-06-03 at 00.42.19.jpg (Aligning Baselines)
-          </span>
-        </div>
       </header>
 
       {/* MAIN CONTAINER */}
@@ -308,7 +300,7 @@ export default function App() {
               1. Choose a Test Syllable
             </h2>
 
-            <div className="grid grid-cols-5 gap-1.5">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
               {PRESETS.map((p, idx) => (
                 <button
                   key={idx}
@@ -602,7 +594,7 @@ export default function App() {
         <section className="lg:col-span-8 flex flex-col gap-6">
 
           {/* NAVIGATION TABS */}
-          <div className="flex bg-slate-900 p-1 rounded-xl border border-slate-800">
+          <div className="flex flex-col sm:flex-row bg-slate-900 p-1 rounded-xl border border-slate-800 gap-1 sm:gap-0">
             <button
               onClick={() => setActiveTab('worship')}
               className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-semibold rounded-lg transition-all ${
