@@ -111,3 +111,11 @@ body {
   animation: scanline 8s linear infinite;
   pointer-events: none;
 }
+
+#tool-list li {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+#tool-list li:last-child {
+  border-bottom: none;
+}
+
