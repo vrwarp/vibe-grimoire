@@ -1,0 +1,1509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>VBS Rome Charades</title>
+  
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;950&family=Outfit:wght@300;400;600;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            romanRed: '#8a0c1b',
+            romanGold: '#c5a059',
+            romanGoldLight: '#ffd700',
+            romanSand: '#f3efe3',
+            romanCharcoal: '#2d251e',
+            romanWood: '#3d2314',
+          },
+          fontFamily: {
+            outfit: ['Outfit', 'sans-serif'],
+            cinzel: ['Cinzel', 'serif'],
+            mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    html, body {
+      height: 100%;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background-color: #f3efe3;
+      color: #2d251e;
+      /* Prevent elastic bounce on iOS */
+      position: fixed;
+    }
+
+    /* Travertine marble background veins */
+    .marble-bg {
+      background-color: #f7f4eb;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(197, 160, 89, 0.05) 0%, transparent 60%),
+        radial-gradient(circle at 90% 80%, rgba(61, 35, 20, 0.04) 0%, transparent 60%),
+        linear-gradient(105deg, transparent 45%, rgba(197, 160, 89, 0.02) 46%, rgba(197, 160, 89, 0.02) 48%, transparent 49%),
+        linear-gradient(25deg, transparent 20%, rgba(197, 160, 89, 0.01) 21%, rgba(197, 160, 89, 0.01) 23%, transparent 24%);
+      background-size: 100% 100%;
+    }
+
+    /* Roman elements */
+    .gold-medallion {
+      background: radial-gradient(circle at center, #ffe082 0%, #c5a059 70%, #8d6e63 100%);
+      border: 5px double #ffd54f;
+      box-shadow: 0 8px 25px rgba(141, 110, 99, 0.4);
+    }
+
+    .wood-plaque {
+      background-color: #2b160a;
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(255,255,255,0.08), transparent 70%),
+        linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.4));
+      border: 3px solid #5c3a21;
+      outline: 1px solid #c5a059;
+      outline-offset: -4px;
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.8), 0 10px 20px rgba(0,0,0,0.5);
+    }
+
+    .glass-btn {
+      background: rgba(45, 37, 30, 0.05);
+      border: 1px solid rgba(45, 37, 30, 0.15);
+      color: #4a3e35;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .glass-btn:hover {
+      background: rgba(138, 12, 27, 0.05);
+      border-color: #8a0c1b;
+      color: #8a0c1b;
+      box-shadow: 0 0 12px rgba(138, 12, 27, 0.12);
+      transform: translateY(-1px);
+    }
+
+    .glass-btn:active {
+      transform: translateY(1px);
+    }
+
+    .text-shadow-gold {
+      text-shadow: 1px 1px 0px #ffe57f, -1px -1px 0px #ffe57f, 2px 2px 0px #ffe57f, -2px -2px 0px #ffe57f, 0 4px 12px rgba(0,0,0,0.4);
+    }
+
+    .neon-glow-cyan {
+      text-shadow: 0 0 8px rgba(138, 12, 27, 0.25);
+    }
+
+    /* Smooth transition for screens */
+    .screen-fade {
+      transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .screen-hidden {
+      opacity: 0;
+      transform: scale(0.98);
+      pointer-events: none;
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      visibility: hidden;
+    }
+
+    /* Disable double-tap zoom on iOS buttons */
+    button, select, input {
+      touch-action: manipulation;
+    }
+    
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(243, 239, 227, 0.5);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #c5a059;
+      border-radius: 3px;
+    }
+    
+    /* Fullscreen specific background */
+    :fullscreen {
+      background-color: #f3efe3;
+    }
+  </style>
+</head>
+<body class="marble-bg h-full w-full relative">
+
+  <!-- Outer Flex Container filling the viewport -->
+  <div class="flex flex-col h-[100dvh] w-full justify-between p-2 sm:p-4 md:p-6 overflow-hidden relative z-10 box-border text-romanCharcoal">
+
+    <!-- ================== MENU SCREEN ================== -->
+    <div id="menu-screen" class="screen-fade flex flex-col h-full w-full max-w-lg mx-auto justify-between">
+      
+      <!-- Back to tools button -->
+      <div class="w-full flex justify-start pt-2">
+        <a href="../../" class="px-4 py-2 rounded-xl glass-btn font-medium inline-flex items-center text-sm">
+          <i class="fa-solid fa-arrow-left mr-2"></i> Back to Tools
+        </a>
+      </div>
+
+      <!-- Title / Header (Golden Medallion & Wood Banner style) -->
+      <div class="text-center my-auto py-6">
+        <!-- Medallion -->
+        <div class="relative w-40 h-40 md:w-48 md:h-48 rounded-full gold-medallion flex flex-col items-center justify-center mx-auto shadow-2xl mb-6 select-none">
+          <div class="text-[9px] font-mono tracking-widest text-[#4e342e] uppercase font-bold opacity-75 mt-4">EXPERIENTIA TERRAE SANCTAE</div>
+          <h1 class="text-5xl md:text-6xl font-black tracking-normal uppercase leading-none text-romanRed font-cinzel text-shadow-gold">
+            ROME
+          </h1>
+          <!-- Wood Plaque -->
+          <div class="absolute -bottom-2 wood-plaque px-4 py-1.5 rounded-lg shadow-lg text-center min-w-[200px]">
+            <div class="text-[10px] font-bold text-[#faf8f5] tracking-wide uppercase leading-tight font-outfit">
+              Paul & The Underground Church
+            </div>
+          </div>
+        </div>
+        
+        <div class="text-center mt-6">
+          <h2 class="text-2xl md:text-3xl font-extrabold uppercase text-romanRed font-cinzel tracking-wider">CHARADES</h2>
+          <p class="text-xs text-[#5c4a3c] font-semibold mt-1">
+            Vacation Bible School Edition
+          </p>
+        </div>
+      </div>
+
+      <!-- Settings & Controls Panel -->
+      <div class="w-full bg-[#fbf9f5] rounded-3xl p-6 md:p-8 space-y-6 shadow-xl border border-[#c5a059]/20 mb-4">
+        
+        <!-- Level Select Buttons -->
+        <div class="space-y-4">
+          <label class="block text-xs font-semibold tracking-wider text-gray-500 uppercase">Select Game Category</label>
+          
+          <button 
+            onclick="startGame('1st')"
+            class="w-full py-4 px-6 bg-gradient-to-r from-romanRed to-[#5e020e] hover:from-[#9c1424] hover:to-[#6f0310] active:scale-[0.98] rounded-2xl font-bold text-lg text-white transition-all flex justify-between items-center shadow-lg shadow-red-950/20 group border-2 border-romanGold"
+          >
+            <div class="text-left">
+              <span class="block font-cinzel text-[#ffd700] text-base uppercase tracking-wider">1st Grade Level</span>
+              <span class="block text-[#f7f4eb] text-xs font-normal opacity-85 mt-0.5">Concrete Actions & Simple Mimes</span>
+            </div>
+            <i class="fa-solid fa-bolt-lightning text-[#ffd700] group-hover:scale-110 transition-transform"></i>
+          </button>
+          
+          <button 
+            onclick="startGame('4th')"
+            class="w-full py-4 px-6 bg-gradient-to-r from-[#2b3e50] to-[#1a2633] hover:from-[#374e64] hover:to-[#223242] active:scale-[0.98] rounded-2xl font-bold text-lg text-white transition-all flex justify-between items-center shadow-lg shadow-slate-950/20 group border-2 border-romanGold"
+          >
+            <div class="text-left">
+              <span class="block font-cinzel text-[#ffd700] text-base uppercase tracking-wider">4th Grade Level</span>
+              <span class="block text-[#f7f4eb] text-xs font-normal opacity-85 mt-0.5">Abstract Concepts & Historical Scenes</span>
+            </div>
+            <i class="fa-solid fa-brain text-[#ffd700] group-hover:scale-110 transition-transform"></i>
+          </button>
+        </div>
+
+        <div class="border-t border-gray-200 pt-5 space-y-4">
+          <!-- Timer Selector -->
+          <div class="flex items-center justify-between text-romanCharcoal text-sm">
+            <label for="timer-setting" class="flex items-center gap-2 font-semibold uppercase tracking-wider text-xs">
+              <i class="fa-regular fa-clock text-romanRed"></i> Timer Duration
+            </label>
+            <select 
+              id="timer-setting"
+              class="bg-[#fcfbf9] border border-romanGold rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-romanRed/50 transition-all font-semibold text-romanCharcoal cursor-pointer"
+              onchange="setGameDuration(this.value)"
+            >
+              <option value="30">30 Seconds</option>
+              <option value="60" selected>1 Minute</option>
+              <option value="90">1.5 Minutes</option>
+              <option value="120">2 Minutes</option>
+            </select>
+          </div>
+
+          <!-- Sound Setting -->
+          <div class="flex items-center justify-between text-romanCharcoal text-sm">
+            <span class="flex items-center gap-2 font-semibold uppercase tracking-wider text-xs">
+              <i class="fa-solid fa-volume-high text-romanRed" id="sound-icon-menu"></i> Audio FX
+            </span>
+            <button 
+              id="sound-toggle-menu" 
+              onclick="toggleSoundSetting()"
+              class="px-4 py-2 rounded-xl glass-btn font-semibold text-xs transition-all uppercase tracking-wider"
+            >
+              Enabled
+            </button>
+          </div>
+
+          <!-- Fullscreen Action -->
+          <button 
+            id="fullscreen-btn-menu"
+            onclick="toggleFullscreen()"
+            class="w-full py-3 rounded-xl glass-btn font-semibold text-xs font-mono uppercase tracking-widest flex items-center justify-center gap-2 transition-all"
+          >
+            <i class="fa-solid fa-expand text-lg"></i> <span class="btn-label">Fullscreen</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================== PLAYING SCREEN ================== -->
+    <div id="playing-screen" class="screen-fade screen-hidden flex flex-col landscape:flex-row h-full w-full justify-between p-0 gap-0">
+      
+      <!-- LEFT PANEL (Timer, Controls, and Settings - Visible & stretched in landscape) -->
+      <div class="hidden landscape:flex flex-col justify-between items-center w-64 bg-[#efebe4]/60 border-r border-[#c5a059]/20 p-4 h-full">
+        <!-- Exit Button -->
+        <button 
+          onclick="exitGame()" 
+          class="w-full py-2 rounded-xl glass-btn text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5"
+          title="Exit to menu"
+        >
+          <i class="fa-solid fa-chevron-left"></i> <span>Exit</span>
+        </button>
+
+        <!-- Timer & Play Controls -->
+        <div class="flex flex-col items-center gap-3 my-auto">
+          <!-- Main Gold Medallion Timer -->
+          <div class="relative w-20 h-20 rounded-full gold-medallion flex flex-col items-center justify-center shadow-2xl select-none">
+            <div 
+              id="timer-readout-left"
+              class="text-lg font-mono font-black text-[#3d2314] tracking-tight transition-all duration-300"
+            >
+              1:00
+            </div>
+          </div>
+          
+          <div class="flex gap-2 mt-1">
+            <button 
+              id="timer-play-btn-left"
+              onclick="toggleTimer()"
+              class="w-10 h-10 rounded-full bg-romanRed hover:bg-red-700 active:scale-95 text-white flex items-center justify-center transition-all shadow-md border border-romanGold/30"
+              title="Pause/Play"
+            >
+              <i class="fa-solid fa-play text-xs"></i>
+            </button>
+            <button 
+              onclick="resetTimer()"
+              class="w-10 h-10 rounded-full glass-btn flex items-center justify-center transition-colors active:scale-95 shadow-sm border border-romanGold/20"
+              title="Reset Timer"
+            >
+              <i class="fa-solid fa-rotate-right text-xs"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Progress and Settings at bottom of left panel -->
+        <div class="w-full space-y-3">
+          <div class="flex flex-col gap-2">
+            <!-- Progress Counter -->
+            <div 
+              id="progress-counter-left"
+              class="text-center text-xs font-mono font-black text-romanCharcoal bg-white/60 border border-romanGold/30 py-2 rounded-full shadow-sm select-none tracking-widest"
+            >
+              1 / 150
+            </div>
+            <!-- Score Counter -->
+            <div 
+              id="score-counter-left"
+              class="text-center text-xs font-mono font-black text-[#044e39] bg-emerald-600/15 border border-emerald-600/30 py-2 rounded-full shadow-sm select-none tracking-widest flex items-center justify-center gap-1.5"
+            >
+              <i class="fa-solid fa-check text-[10px]"></i> <span>0</span>
+            </div>
+          </div>
+          
+          <!-- Sound and Fullscreen -->
+          <div class="flex gap-2 justify-center">
+            <button 
+              id="sound-toggle-game-left" 
+              onclick="toggleSoundSetting()"
+              class="flex-1 h-9 rounded-xl glass-btn flex items-center justify-center transition-colors"
+              title="Toggle Sound"
+            >
+              <i class="fa-solid fa-volume-high text-xs"></i>
+            </button>
+            
+            <button 
+              id="fullscreen-btn-left"
+              onclick="toggleFullscreen()"
+              class="flex-1 h-9 rounded-xl glass-btn flex items-center justify-center transition-colors"
+              title="Toggle Fullscreen"
+            >
+              <i class="fa-solid fa-expand text-xs"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PORTRAIT-ONLY TOP HEADER (Hidden in landscape) -->
+      <div class="flex landscape:hidden justify-between items-center w-full px-1 py-1 sm:py-2 flex-shrink-0">
+        <!-- Exit Game Button -->
+        <button 
+          onclick="exitGame()" 
+          class="px-3 py-2 rounded-xl glass-btn text-xs font-bold uppercase tracking-wider flex items-center gap-1.5"
+          title="Exit to menu"
+        >
+          <i class="fa-solid fa-chevron-left"></i> <span>Exit</span>
+        </button>
+
+        <!-- Stats Group (Progress & Score) -->
+        <div class="flex items-center gap-2">
+          <!-- Progress Counter -->
+          <div 
+            id="progress-counter-portrait"
+            class="text-xs font-mono font-black text-romanCharcoal bg-white/60 border border-romanGold/30 px-3.5 py-1.5 rounded-full shadow-sm select-none tracking-widest"
+          >
+            1 / 150
+          </div>
+          <!-- Score Counter -->
+          <div 
+            id="score-counter-portrait"
+            class="text-xs font-mono font-black text-[#044e39] bg-emerald-600/15 border border-emerald-600/30 px-3.5 py-1.5 rounded-full shadow-sm select-none tracking-widest flex items-center gap-1"
+          >
+            <i class="fa-solid fa-check text-[10px]"></i> <span>0</span>
+          </div>
+        </div>
+
+        <!-- Utility Buttons -->
+        <div class="flex items-center gap-1.5">
+          <button 
+            id="sound-toggle-game-portrait" 
+            onclick="toggleSoundSetting()"
+            class="w-9 h-9 rounded-xl glass-btn flex items-center justify-center transition-colors"
+            title="Toggle Sound"
+          >
+            <i class="fa-solid fa-volume-high text-xs"></i>
+          </button>
+          
+          <button 
+            id="fullscreen-btn-portrait"
+            onclick="toggleFullscreen()"
+            class="w-9 h-9 rounded-xl glass-btn flex items-center justify-center transition-colors"
+            title="Toggle Fullscreen"
+          >
+            <i class="fa-solid fa-expand text-xs"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- PORTRAIT-ONLY TIMER SECTION (Hidden in landscape) -->
+      <div class="flex landscape:hidden items-center justify-center gap-6 sm:gap-8 my-1.5 sm:my-3 flex-shrink-0">
+        <button 
+          id="timer-play-btn-portrait"
+          onclick="toggleTimer()"
+          class="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-romanRed hover:bg-red-700 active:scale-95 text-white flex items-center justify-center transition-all shadow-lg border border-romanGold/30 flex-shrink-0"
+          title="Pause/Play"
+        >
+          <i class="fa-solid fa-play text-base sm:text-lg"></i>
+        </button>
+
+        <div class="relative w-32 h-32 sm:w-36 sm:h-36 rounded-full gold-medallion flex flex-col items-center justify-center shadow-2xl select-none transform hover:scale-105 transition-transform duration-300 flex-shrink-0">
+          <div 
+            id="timer-readout-portrait"
+            class="text-4xl sm:text-5xl font-mono font-black text-[#3d2314] tracking-tight transition-all duration-300"
+          >
+            1:00
+          </div>
+        </div>
+
+        <button 
+          onclick="resetTimer()"
+          class="w-12 h-12 sm:w-14 sm:h-14 rounded-full glass-btn flex items-center justify-center transition-colors active:scale-95 shadow-md border border-romanGold/20 flex-shrink-0"
+          title="Reset Timer"
+        >
+          <i class="fa-solid fa-rotate-right text-base sm:text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Progress bar (Portrait only) -->
+      <div class="w-full h-1.5 bg-white/20 rounded-full overflow-hidden mt-0.5 mb-1 sm:mt-1 sm:mb-2 border border-[#c5a059]/10 landscape:hidden flex-shrink-0">
+        <div id="progress-bar-portrait" class="h-full bg-gradient-to-r from-romanRed to-romanGold transition-all duration-300" style="width: 0%"></div>
+      </div>
+
+      <!-- RIGHT PANEL / MAIN PLAY AREA (Fills screen in portrait; takes remaining width in landscape) -->
+      <div class="flex-1 flex flex-col justify-between min-h-0 landscape:h-full p-1.5 sm:p-3 gap-2 sm:gap-3 min-w-0">
+        <!-- Main Display Area (Stone Tablet Card) -->
+        <div class="flex-1 flex flex-col w-full max-w-2xl mx-auto min-h-0">
+          <!-- Travertine Stone Tablet Wrapper -->
+          <div class="relative w-full flex-1 p-3 sm:p-6 md:p-10 bg-gradient-to-b from-[#faf8f5] to-[#efebe4] rounded-3xl border-4 border-romanGold shadow-2xl flex flex-col justify-between items-center gap-2 sm:gap-3 min-h-0">
+            
+            <!-- Roman decorative corners -->
+            <div class="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-romanGold rounded-tl-xl opacity-80"></div>
+            <div class="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-romanGold rounded-tr-xl opacity-80"></div>
+            <div class="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-romanGold rounded-bl-xl opacity-80"></div>
+            <div class="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-romanGold rounded-br-xl opacity-80"></div>
+
+            <div class="text-[9px] font-mono tracking-widest text-[#8d6e63] uppercase select-none mt-0.5 sm:mt-1">
+              // ROMAN TABLET //
+            </div>
+            
+            <!-- Word Display -->
+            <h2 
+              id="word-display"
+              class="text-4xl sm:text-5xl md:text-6xl font-black text-romanRed tracking-tight break-normal select-none leading-tight py-1 font-cinzel uppercase max-w-full text-center transition-all duration-300"
+            >
+              WORD
+            </h2>
+            
+            <!-- Hint Container (Wood Plaque style) -->
+            <div class="w-full wood-plaque p-4 sm:p-6 rounded-2xl min-h-[110px] landscape:min-h-[85px] sm:min-h-[150px] flex flex-col items-center justify-center mb-1 flex-shrink-0 gap-1">
+              <span class="text-[9px] sm:text-[10px] font-mono tracking-widest text-[#ffd700]/80 font-black uppercase select-none">
+                Suggested Hint (Optional)
+              </span>
+              <p 
+                id="hint-display"
+                class="text-lg sm:text-xl md:text-2xl landscape:text-sm landscape:sm:text-base text-[#f7f4eb] font-normal tracking-wide leading-normal sm:leading-relaxed text-center"
+              >
+                Pretend hint description goes here.
+              </p>
+            </div>
+
+            <!-- Start Button inside Card for Get Ready Screen -->
+            <div id="card-start-btn-container" class="w-full hidden">
+              <button 
+                onclick="startRound()"
+                class="w-full py-3.5 bg-gradient-to-r from-romanRed to-[#5e020e] hover:from-[#9c1424] hover:to-[#6f0310] active:scale-95 text-white font-black rounded-2xl tracking-widest transition-all shadow-lg border border-romanGold/30 uppercase"
+              >
+                <i class="fa-solid fa-play mr-2"></i> Start Round
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Action Buttons Panel (Sits at the bottom of the right panel) -->
+        <div class="pb-safe flex-shrink-0">
+          <!-- Gameplay Actions (Roman Stone buttons) -->
+          <div id="gameplay-actions" class="max-w-xl mx-auto flex gap-3 justify-between">
+            <button 
+              onclick="handleNextWord('wrong')"
+              class="flex-1 py-2 sm:py-3 md:py-4 bg-gradient-to-b from-[#a31d1d] to-[#6b0f0f] border border-romanGold/30 hover:from-[#b82525] hover:to-[#7d1313] active:scale-95 text-white rounded-2xl flex flex-col items-center justify-center gap-0.5 transition-all group shadow-lg shadow-red-950/20"
+            >
+              <i class="fa-solid fa-xmark text-lg md:text-xl group-hover:scale-110 transition-transform"></i>
+              <span class="text-[10px] font-bold uppercase tracking-wider">Wrong</span>
+            </button>
+            
+            <button 
+              onclick="handleNextWord('skip')"
+              class="flex-1 py-2 sm:py-3 md:py-4 bg-gradient-to-b from-[#8c6239] to-[#5c3e21] border border-romanGold/20 hover:from-[#a17242] hover:to-[#6d4a27] active:scale-95 text-white rounded-2xl flex flex-col items-center justify-center gap-0.5 transition-all group shadow-lg"
+            >
+              <i class="fa-solid fa-forward text-lg md:text-xl group-hover:translate-x-0.5 transition-transform"></i>
+              <span class="text-[10px] font-bold uppercase tracking-wider">Skip</span>
+            </button>
+            
+            <button 
+              onclick="handleNextWord('right')"
+              class="flex-1 py-2 sm:py-3 md:py-4 bg-gradient-to-b from-[#065f46] to-[#044e39] border border-romanGold/30 hover:from-[#047857] hover:to-[#055c44] active:scale-95 text-white rounded-2xl flex flex-col items-center justify-center gap-0.5 transition-all group shadow-lg shadow-emerald-950/20"
+            >
+              <i class="fa-solid fa-check text-lg md:text-xl group-hover:scale-110 transition-transform"></i>
+              <span class="text-[10px] font-bold uppercase tracking-wider">Right</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ================== DONE SCREEN ================== -->
+    <div id="done-screen" class="screen-fade screen-hidden flex flex-col h-full w-full max-w-md mx-auto justify-center items-center text-center p-4">
+      
+      <!-- Celebratory Trophy Icon with Roman Gold Medallion Rings -->
+      <div class="relative w-32 h-32 mb-8 flex items-center justify-center mx-auto">
+        <div class="absolute inset-0 rounded-full bg-romanGold/10 border border-romanGold/20 animate-ping"></div>
+        <div class="absolute inset-2 rounded-full bg-romanGold/20 border border-romanGold/40"></div>
+        <div class="w-20 h-20 rounded-full bg-gradient-to-br from-romanGold to-amber-600 flex items-center justify-center shadow-xl shadow-amber-500/25 relative z-10">
+          <i class="fa-solid fa-trophy text-4xl text-white"></i>
+        </div>
+      </div>
+
+      <h2 class="text-4xl md:text-5xl font-black text-romanRed mb-3 tracking-tighter uppercase leading-none font-cinzel text-shadow-gold">
+        ALL DONE!
+      </h2>
+      <p class="text-base text-romanCharcoal mb-6 max-w-xs mx-auto font-medium">
+        Outstanding! You have gone through every single VBS charades word in the set.
+      </p>
+
+      <!-- Stats Recap Card -->
+      <div class="w-full bg-[#fbf9f5] rounded-2xl p-5 mb-8 border border-romanGold/20 space-y-3 font-mono text-sm text-romanCharcoal shadow-md">
+        <div class="flex justify-between border-b border-gray-200 pb-2">
+          <span class="text-gray-500">STATUS:</span>
+          <span class="text-romanRed font-bold">MISSION ACCOMPLISHED</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-500">LEVEL COMPLETED:</span>
+          <span id="level-stat" class="font-bold">-</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-500">TOTAL SECONDS SETUP:</span>
+          <span id="duration-stat" class="font-bold">-</span>
+        </div>
+      </div>
+
+      <!-- Action Button -->
+      <button 
+        onclick="exitGame()"
+        class="w-full max-w-xs py-4 bg-gradient-to-r from-romanRed to-[#5e020e] hover:from-[#9c1424] hover:to-[#6f0310] active:scale-95 text-white font-black rounded-2xl tracking-widest transition-all shadow-lg uppercase"
+      >
+        Back to Menu
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2 pointer-events-none w-full max-w-xs px-4"></div>
+
+  <!-- Audio Context Setup and Game Script -->
+  <script>
+    // Game Charades Data
+    const charadesData = {
+      grade1: [
+        { word: "Paul", hint: "Sit on the floor, pretend one hand is chained, and write on the other palm." },
+        { word: "Guard", hint: "Stand stiffly, hold a fake spear vertically, and look grumpy." },
+        { word: "Chain", hint: "Hold fists together and pretend they are locked and heavy." },
+        { word: "Cave", hint: "Crouch low and hold hands over your head like a roof." },
+        { word: "Fish", hint: "Put palms together and wiggle them forward like a swimming fish." },
+        { word: "Gift", hint: "Pretend to hand a wrapped box to someone and smile." },
+        { word: "Heartbeat", hint: "Place a hand on your chest and thump it outward twice rhythmically." },
+        { word: "Butterfly", hint: "Hook thumbs together and flap hands like wings." },
+        { word: "Caterpillar", hint: "Wiggle your index finger crawling up your opposite arm." },
+        { word: "Sleeping", hint: "Lean head on hands, close eyes, and mime snoring loudly." },
+        { word: "Waking up", hint: "Gasp silently, open eyes wide, and jump up in a panic." },
+        { word: "Sword", hint: "Pretend to pull a long blade from a belt and swing it." },
+        { word: "Keys", hint: "Pretend to hold a heavy ring and turn a key in a lock." },
+        { word: "Backpack", hint: "Pretend to put on straps and walk hunched under heavy weight." },
+        { word: "River", hint: "Take exaggerated high steps as if wading through water." },
+        { word: "Wreath", hint: "Pretend to place a delicate circle of leaves on your head." },
+        { word: "Toga", hint: "Pretend to throw a long blanket over one shoulder." },
+        { word: "Chariot", hint: "Hold imaginary reins and bounce up and down." },
+        { word: "Horse", hint: "Gallop in place and toss your head back." },
+        { word: "Fire", hint: "Wiggle fingers upward rapidly to mimic flames." },
+        { word: "Water Bucket", hint: "Pretend to hold a heavy pail with two hands and heave it forward." },
+        { word: "Hammering", hint: "Pound one fist repeatedly into the other flat palm." },
+        { word: "Scroll", hint: "Pretend to unroll a long piece of paper from both ends." },
+        { word: "Writing", hint: "Pretend to dip a quill and write carefully in the air." },
+        { word: "Bread", hint: "Pretend to tear a loaf in half and take a bite." },
+        { word: "High Jump", hint: "Run in place and execute a high vertical jump." },
+        { word: "Heavy Ball", hint: "Cradle an imaginary ball at your neck, spin, and shove it outward." },
+        { word: "Hoop", hint: "Pretend to run while tapping a rolling wheel with a stick." },
+        { word: "Sneaking", hint: "Walk on tiptoes while looking around suspiciously." },
+        { word: "Whispering", hint: "Cup a hand around your mouth and lean in closely." },
+        { word: "Singing", hint: "Open mouth wide and hold an imaginary microphone." },
+        { word: "Flute", hint: "Hold hands to the side of your face, wiggle fingers, and blow." },
+        { word: "Praying", hint: "Fold hands, bow head, and close eyes." },
+        { word: "Hugging", hint: "Wrap arms tightly around yourself." },
+        { word: "Crying", hint: "Rub eyes with fists and push out your lower lip." },
+        { word: "Melon", hint: "Look up, act surprised, cover your head, and stumble." },
+        { word: "Rat", hint: "Scurry on the floor and wiggle your nose." },
+        { word: "Cart", hint: "Pretend to push a wheelbarrow heavily." },
+        { word: "Shovel", hint: "Pretend to step on a spade, lift, and toss dirt over your shoulder." },
+        { word: "Sweeping", hint: "Pretend to hold a broom handle and sweep the floor vigorously." },
+        { word: "Clapping", hint: "Clap hands together loudly." },
+        { word: "Cheering", hint: "Throw hands up and jump silently with an open mouth." },
+        { word: "Handshake", hint: "Reach out and shake an imaginary hand." },
+        { word: "High Five", hint: "Slap a hand high in the air." },
+        { word: "Fist Bump", hint: "Tap knuckles forward against an invisible hand." },
+        { word: "Tent", hint: "Make a large triangle shape over your head with your arms." },
+        { word: "Spear", hint: "Hold a long invisible pole with two hands and thrust forward." },
+        { word: "Sandals", hint: "Pretend to lace up straps tightly around your calf." },
+        { word: "Coins", hint: "Pretend to drop small items from one hand into your other palm." },
+        { word: "Anvil", hint: "Strike a heavy imaginary block at waist level with a hammer." },
+        { word: "Crown", hint: "Pretend to carefully place a ring on top of your head." },
+        { word: "Building", hint: "Stack your fists on top of each other repeatedly." },
+        { word: "Bones", hint: "Toss tiny imaginary items on the ground and scoop them up." },
+        { word: "Marching", hint: "Lift knees high and swing arms rigidly in place." },
+        { word: "Hiding", hint: "Crouch down, cover your head, and peek out cautiously." },
+        { word: "Running", hint: "Run as fast as possible in place." },
+        { word: "Listening", hint: "Cup a hand to your ear and lean forward." },
+        { word: "Knocking", hint: "Rap your knuckles in the air." },
+        { word: "Door", hint: "Pretend to turn a heavy handle and pull open." },
+        { word: "Window", hint: "Draw a square in the air and pretend to pull a shade down." },
+        { word: "Sun", hint: "Make a massive circle over your head with both arms." },
+        { word: "Night", hint: "Rest your head sideways on your hands and close your eyes." },
+        { word: "Lantern", hint: "Hold up an imaginary handle and peer into the darkness." },
+        { word: "Fireplace", hint: "Rub your hands together over a low, imaginary flame." },
+        { word: "Stretching", hint: "Reach high to the sky, then touch your toes." },
+        { word: "Jumping Jacks", hint: "Perform silent jumping jacks." },
+        { word: "Throwing", hint: "Pretend to heave a bucket forward to another person." },
+        { word: "Catching", hint: "Hold out arms and grab something heavy out of the air." },
+        { word: "Falling", hint: "Stumble dramatically and pretend to hit the ground." },
+        { word: "Standing Guard", hint: "Stand perfectly straight, push chest out, and put hands behind back." },
+        { word: "Drawing in dirt", hint: "Squat down and trace a line on the floor with your finger." },
+        { word: "Smiling", hint: "Point to a massive grin on your face." },
+        { word: "Frowning", hint: "Point to a deep pout and cross your arms." },
+        { word: "Surprise", hint: "Throw hands up and open mouth wide in shock." },
+        { word: "Scared", hint: "Bite your fingernails and tremble violently." },
+        { word: "Strong", hint: "Flex both biceps like a bodybuilder." },
+        { word: "Weak", hint: "Slump over heavily and hold your stomach." },
+        { word: "Hot", hint: "Wipe your brow and fan your face rapidly." },
+        { word: "Cold", hint: "Shiver and rub your arms." },
+        { word: "Dirty", hint: "Pretend to brush heavy dust off your shirt." },
+        { word: "Clean", hint: "Pretend to scrub your hands with soap." },
+        { word: "Heavy", hint: "Struggle intensely to lift an imaginary boulder." },
+        { word: "Light", hint: "Pretend to toss a weightless feather in the air." },
+        { word: "Fast", hint: "Run in place at maximum speed." },
+        { word: "Slow", hint: "Move in exaggerated slow motion." },
+        { word: "Leatherworker", hint: "Pretend to pull a needle hard through thick fabric." },
+        { word: "Cross", hint: "Stand perfectly straight with arms stretched out wide horizontally." },
+        { word: "Nails", hint: "Hold a tiny object with two fingers and tap it with a hammer." },
+        { word: "Wood", hint: "Pretend to saw a board back and forth." },
+        { word: "Rope", hint: "Pretend to pull a thick rope hand-over-hand." },
+        { word: "Doctor", hint: "Check someone's imaginary heartbeat with a stethoscope." },
+        { word: "Baby", hint: "Cradle and rock an imaginary infant in your arms." },
+        { word: "Mother", hint: "Pat an imaginary child's head affectionately." },
+        { word: "Father", hint: "Stand tall, cross arms, and nod sternly." },
+        { word: "Brother/Sister", hint: "Put an arm around an imaginary person next to you." },
+        { word: "Friend", hint: "Wave happily and point at someone." },
+        { word: "Enemy", hint: "Put up your fists as if preparing to box." },
+        { word: "King", hint: "Sit on a throne and point forward commandingly." },
+        { word: "Slave", hint: "Pretend to scrub the floor on your hands and knees." },
+        { word: "Teacher", hint: "Stand, hold up a scroll, and raise an index finger to instruct." },
+        { word: "Torch / Flame", hint: "Wiggle fingers upward like a flickering flame." },
+        { word: "Basket", hint: "Pretend to weave a bowl shape, then pick it up by an invisible handle." },
+        { word: "Table", hint: "Hold both hands flat in front of you to outline a flat surface." },
+        { word: "Chair", hint: "Squat into a seated position in the air and rest your hands on your lap." },
+        { word: "Jar", hint: "Outline a large, round vase shape in the air with your hands." },
+        { word: "Necklace", hint: "Pretend to clasp a chain around the back of your neck." },
+        { word: "Counting", hint: "Poke the air repeatedly as if sliding tiny beads on wires." },
+        { word: "Tablet", hint: "Hold one flat palm up and pretend to scratch it with your other finger." },
+        { word: "Pen", hint: "Pinch your fingers together and draw tiny letters in the air." },
+        { word: "Wall", hint: "Put both hands flat against an invisible surface and push hard." },
+        { word: "Stone", hint: "Pick up an imaginary heavy rock and place it carefully on the floor." },
+        { word: "Path", hint: "Point to the ground and step carefully from one invisible spot to the next." },
+        { word: "Dancing", hint: "Spin around and wave your arms happily." },
+        { word: "Bowing", hint: "Put hands together and bend forward deeply at the waist." },
+        { word: "Kneeling", hint: "Drop to both knees and fold your hands." },
+        { word: "Crawling", hint: "Get on your hands and knees and move forward slowly." },
+        { word: "Tiptoeing", hint: "Walk high on your toes while holding a finger to your lips." },
+        { word: "Waving", hint: "Hold a hand high and wave it back and forth happily." },
+        { word: "Pointing", hint: "Furrow your brow and jab your index finger forward firmly." },
+        { word: "Yawning", hint: "Stretch your arms wide and open your mouth in a huge, silent yawn." },
+        { word: "Shivering", hint: "Wrap your arms around yourself and chatter your teeth." },
+        { word: "Sweating", hint: "Wipe your forehead dramatically and fling the invisible sweat away." },
+        { word: "Drinking", hint: "Cup your hands, bring them to your mouth, and gulp." },
+        { word: "Eating", hint: "Bring an imaginary piece of food to your mouth and chew happily." },
+        { word: "Sitting", hint: "Cross your legs and sit flat on the floor." },
+        { word: "Standing Up", hint: "Leap from a crouching position to standing very straight." },
+        { word: "Dropping", hint: "Pretend to hold something, then open your hands and let it fall." },
+        { word: "Pulling", hint: "Lean back and pull invisible ropes tightly toward your chest." },
+        { word: "Pushing", hint: "Lean forward and press both hands outward heavily." },
+        { word: "Washing Face", hint: "Rub both hands over your cheeks in a circular motion." },
+        { word: "Headband", hint: "Pretend to tie a piece of cloth around your forehead." },
+        { word: "Poster", hint: "Hold up a large invisible rectangle for everyone to see." },
+        { word: "Marker", hint: "Take the cap off an invisible pen and draw on your palm." },
+        { word: "Blanket", hint: "Pretend to unfold a large cloth and shake it out over the floor." },
+        { word: "Shield", hint: "Hold one arm up firmly as if blocking a heavy blow." },
+        { word: "Helmet", hint: "Pretend to strap a heavy hat onto your head and under your chin." },
+        { word: "Dirt", hint: "Point to the ground, squat, and brush the floor with your hand." },
+        { word: "Manure / Poop", hint: "Hold your nose with one hand and wave the air with the other." },
+        { word: "Apple / Fruit", hint: "Hold a round object, shine it on your shirt, and take a big bite." },
+        { word: "Medal / Prize", hint: "Pretend to have a ribbon placed around your neck and hold it up proudly." },
+        { word: "Needle", hint: "Pinch two fingers together and push them forward." },
+        { word: "Thread", hint: "Pretend to pull a long string out from your pinch." },
+        { word: "Leaf", hint: "Pinch a tiny object in the air and pretend to attach it to a circle." },
+        { word: "Sawing", hint: "Push and pull an invisible handsaw back and forth rapidly." },
+        { word: "Pulse", hint: "Press two fingers to the side of your neck and nod rhythmically." },
+        { word: "Hand", hint: "Hold your palm completely flat and point to it." },
+        { word: "Wrist", hint: "Tap the area right below your hand repeatedly." },
+        { word: "Shoulder", hint: "Reach out and gently pat the air at shoulder height." },
+        { word: "Ear", hint: "Cup your hand behind your ear and lean forward." },
+        { word: "Eye", hint: "Point to your eye, then cover it with your hand." },
+        { word: "Stomach", hint: "Rub your belly in circles while slouching." },
+        { word: "Heart", hint: "Use your thumbs and index fingers to make a heart shape over your chest." },
+        { word: "Tomb", hint: "Pretend to roll a massive, heavy boulder out of the way." },
+        { word: "Angel", hint: "Flap your arms slowly and gracefully like large wings." },
+        { word: "Sky", hint: "Sweep your arm in a massive arc over your head." },
+        { word: "Ocean", hint: "Make rolling wave motions with your hands horizontally." },
+        { word: "Bird", hint: "Cross your wrists and flap your hands quickly." },
+        { word: "Tree", hint: "Stand very tall, put arms out like branches, and stay perfectly still." },
+        { word: "Firefighter", hint: "Hold an invisible hose and spray it back and forth." },
+        { word: "Soldier", hint: "March rigidly while holding an invisible spear upright." },
+        { word: "Guarding", hint: "Stand with arms crossed, legs apart, and look very tough." },
+        { word: "Looking Around", hint: "Put a hand over your brow and scan left and right nervously." },
+        { word: "Meeting", hint: "Wave invisible people over to sit in a circle with you." },
+        { word: "Letter", hint: "Fold an invisible piece of paper and pretend to seal it." },
+        { word: "Reading", hint: "Hold out two hands like an open book and move your head left to right." },
+        { word: "Postcard", hint: "Pretend to write on a small card and drop it into a mailbox." },
+        { word: "Sticker", hint: "Pretend to peel a tiny circle off a sheet and press it down firmly." },
+        { word: "Family", hint: "Spread your arms wide to embrace a group, then point to them." },
+        { word: "Sister", hint: "Curtsy slightly and smile warmly." },
+        { word: "Brother", hint: "Give a firm handshake and a friendly pat on the back." },
+        { word: "Sticking", hint: "Press your two palms together and try to pull them apart, failing." },
+        { word: "Changing", hint: "Spin around and suddenly strike a completely different, happy pose." },
+        { word: "Rescue", hint: "Reach down, grab an imaginary hand, and pull them up forcefully." },
+        { word: "Share", hint: "Pretend to break something in half and hand one piece forward." },
+        { word: "Afraid", hint: "Bite your lip, wide your eyes, and hug your knees." },
+        { word: "Brave", hint: "Put your hands on your hips and push your chest out proudly." },
+        { word: "Angry", hint: "Clench your fists, stomp your foot, and scowl." },
+        { word: "Happy", hint: "Jump up and down with a massive smile." },
+        { word: "Laughing", hint: "Hold your belly and lean back as if chuckling silently." },
+        { word: "Preaching", hint: "Stand tall, point to the sky, and gesture passionately as if speaking." },
+        { word: "Whispering in Ear", hint: "Lean close to someone's imaginary ear and cover your mouth." },
+        { word: "Shouting", hint: "Cup hands around your mouth and open it wide." },
+        { word: "Hop / Long Jump", hint: "Swing your arms back and do a massive forward jump from a standstill." },
+        { word: "Target", hint: "Draw a circle in the air, then pretend to throw a dart right into the center." },
+        { word: "Animal", hint: "Crawl on all fours." },
+        { word: "Sheep", hint: "Crawl on all fours and pretend to chew grass." },
+        { word: "Money / Coins", hint: "Rub your thumb and index finger together." },
+        { word: "Microphone", hint: "Hold a fist close to your mouth and gesture to a crowd." },
+        { word: "Singing loudly", hint: "Plant your feet, grab an invisible mic, and lean back to hit a high note." },
+        { word: "Hiding face", hint: "Put both hands over your face and turn away quickly." },
+        { word: "Throwing water", hint: "Swing a heavy bucket back and hurl the contents forward." },
+        { word: "Catching bucket", hint: "Reach out and grab a heavy object flying at you, absorbing the weight." },
+        { word: "Blindfolded", hint: "Pretend to tie a cloth over your eyes and grope the air." },
+        { word: "Stumbling", hint: "Walk forward, trip over your own feet, and flail your arms." },
+        { word: "Taking off chain", hint: "Pretend to squeeze your hand out of a tight metal cuff." },
+        { word: "Drawing", hint: "Pretend to hold a piece of charcoal and sketch on a wall." },
+        { word: "Bathing", hint: "Pretend to scoop water and gently pour it over something small." },
+        { word: "Whipping", hint: "Raise an arm high and snap it forward sharply." },
+        { word: "Opening door", hint: "Turn an invisible knob and push a heavy door outward." },
+        { word: "Closing eyes", hint: "Squeeze eyes shut tightly and take a deep breath." }
+      ],
+      grade4: [
+        { word: "House Arrest", hint: "Point to a house roof over your head, then cross wrists like handcuffs." },
+        { word: "Praetorian Guard", hint: "March rigidly, salute sharply, and hold up a heavy shield." },
+        { word: "Underground Church", hint: "Point down at the floor, then fold your hands in prayer." },
+        { word: "Ichthys", hint: "Draw two intersecting arcs in the air to form a fish." },
+        { word: "Eternal Life", hint: "Draw a continuous circle in the air, then point straight up." },
+        { word: "Transforming", hint: "Wiggle a finger like a bug, then morph into flapping hands." },
+        { word: "Unmerited Prize", hint: "Act highly surprised while receiving an invisible gold medal." },
+        { word: "Senator Atticus", hint: "Wear a pretend toga and point your finger in a bossy, rich manner." },
+        { word: "Freed Slave", hint: "Pretend to break chains off your wrists and jump for joy." },
+        { word: "Architect Severus", hint: "Unroll blueprints, look at them, and scratch your head worriedly." },
+        { word: "Starving Thief", hint: "Rub your stomach, steal imaginary bread, and cower in fear." },
+        { word: "Metalworker", hint: "Hammer an anvil aggressively and cross your arms defiantly." },
+        { word: "Operation Kid-to-Kid", hint: "Drop imaginary coins into a bucket and hand it to a short person." },
+        { word: "Apprenticeship Games", hint: "Blow an imaginary whistle, stretch, and run in place." },
+        { word: "Roman Olympics", hint: "Hold up a flaming torch and run in slow motion." },
+        { word: "Shot Put", hint: "Cradle a heavy ball at your neck, spin around, and shove it outward." },
+        { word: "Triple Jump", hint: "Do a distinct hop, step, and jump sequentially." },
+        { word: "Tossing Knucklebones", hint: "Roll dice-like objects on the floor and cheer." },
+        { word: "Rolling Hoops", hint: "Run while using a stick to push an invisible wheel forward." },
+        { word: "Charioteers", hint: "Hold reins tightly, whip horses, and violently bump around." },
+        { word: "Water Relay", hint: "Pass a heavy bucket from one side of your body to the other." },
+        { word: "Burning Building", hint: "Throw water violently upwards at imaginary flames." },
+        { word: "Army Recruit", hint: "Stand perfectly at attention and snap a salute." },
+        { word: "90-pound pack", hint: "Stagger backward under the weight of a massive backpack." },
+        { word: "Crossing a river", hint: "Wade slowly through waist-deep imaginary water." },
+        { word: "Scribe", hint: "Unroll a scroll and write meticulously with a quill." },
+        { word: "Leatherworking", hint: "Push an awl hard through a thick invisible belt." },
+        { word: "Wreath-making", hint: "Twist vines into a circle and carefully place it on your head." },
+        { word: "Animal Sacrifice", hint: "Hold a struggling animal down on an altar." },
+        { word: "Extollo", hint: "Raise hands high and sing loudly with exaggerated joy." },
+        { word: "Bandura", hint: "Tie an invisible bandana around your forehead or arm." },
+        { word: "Paterfamilias", hint: "Stand tall, stroke your chin, and point downward commandingly." },
+        { word: "Patria Potestas", hint: "Look down at an imaginary baby and give a thumbs up or thumbs down." },
+        { word: "Damascus Road", hint: "Walk, cover your eyes from a bright light, and fall to your knees." },
+        { word: "Pharisee", hint: "Read a scroll closely and act snobby and strict." },
+        { word: "Roman Citizen", hint: "Point to your chest proudly and display an invisible ID card." },
+        { word: "Flinging off a cliff", hint: "Push an invisible person off a ledge and watch them fall down." },
+        { word: "Worshipping Jupiter", hint: "Bow completely down to a towering imaginary statue." },
+        { word: "Centurion", hint: "Wear a crested helmet and bark harsh orders." },
+        { word: "Emperor's Stables", hint: "Hold your nose and shovel horse manure." },
+        { word: "Catacombs", hint: "Walk through dark tunnels and look closely at tombs in the wall." },
+        { word: "Skeleton Keys", hint: "Jingle a massive, heavy ring of iron keys." },
+        { word: "Black Plastic", hint: "Unroll a trash bag and tape it flat to a wall." },
+        { word: "Flute Music", hint: "Hold an invisible transverse flute horizontally and play it." },
+        { word: "Busted Melon", hint: "Put hands on your head like a stuck helmet and stumble around." },
+        { word: "Rats", hint: "Scurry on the floor, wiggle your nose, and squeak." },
+        { word: "Vegetable Cart", hint: "Pretend to juggle tomatoes, then dodge out of the way." },
+        { word: "Falling Asleep on Duty", hint: "Stand at attention, slowly nod off, and jerk awake gripping a sword." },
+        { word: "Escaping", hint: "Look left and right, then tiptoe away quickly." },
+        { word: "Heavy Chain", hint: "Struggle intensely to lift a thick metal chain off the floor." },
+        { word: "Heartbeat", hint: "Press two fingers to your neck pulse, then tap your chest." },
+        { word: "God's love is a gift", hint: "Point up, hug yourself, and hand out a present." },
+        { word: "God's love changes us", hint: "Point up, hug yourself, and flip your hands inside out." },
+        { word: "God's love is always with us", hint: "Point up, hug yourself, and link your index fingers tightly." },
+        { word: "God's love saves us", hint: "Point up, hug yourself, and throw a life preserver." },
+        { word: "God's love is worth sharing", hint: "Point up, hug yourself, and gesture outward to a crowd." },
+        { word: "Wages of Sin", hint: "Pretend to hand over money, then draw a finger across your throat." },
+        { word: "Jesus dying for sinners", hint: "Make a cross with your arms, then point to others around you." },
+        { word: "Not ashamed", hint: "Shake your head no, stand tall, and shout with hands cupped around mouth." },
+        { word: "Tentmaker", hint: "Sew thick canvas forcefully with a heavy needle." },
+        { word: "Forgiving", hint: "Shake your head in disappointment, then smile and shake hands." },
+        { word: "Bravery", hint: "Thump your chest and stand tall despite trembling slightly." },
+        { word: "Good News", hint: "Unroll a scroll and act extremely excited reading it." },
+        { word: "Dropping a sword", hint: "Hold a sword, look at it with disgust, drop it, and raise your hands." },
+        { word: "Inside Out", hint: "Pretend to pull a shirt inside out by grabbing the hem and pulling over your head." },
+        { word: "The Cross", hint: "Stand completely rigid and make a T-shape with your body." },
+        { word: "Writing a letter", hint: "Dip a quill in ink and write paragraphs on parchment." },
+        { word: "Roman Family Cheer", hint: "Huddle up, put hands in the center, and throw them up yelling." },
+        { word: "Fist Bump", hint: "Tap knuckles with an imaginary person deliberately." },
+        { word: "High Five", hint: "Slap a high hand forcefully." },
+        { word: "Cable ties", hint: "Pull a zip tie tight and mimic the ripping sound." },
+        { word: "Hiding in an alley", hint: "Press your back flat against a wall and peek around a corner." },
+        { word: "Whispering a secret", hint: "Look around paranoid, cup hands over someone's ear, and whisper." },
+        { word: "Spies", hint: "Sneak around while looking through an invisible magnifying glass." },
+        { word: "Idols", hint: "Chisel a statue, then drop the tools and bow to it." },
+        { word: "Stoning", hint: "Pick up heavy rocks and throw them downward aggressively." },
+        { word: "Blindness", hint: "Rub your eyes and stumble around with your arms stretched out feeling the air." },
+        { word: "Empty Tomb", hint: "Push a massive boulder aside and look inside acting highly surprised." },
+        { word: "Unmerited", hint: "Receive a trophy while vigorously shaking your head 'I didn't earn it.'" },
+        { word: "Sacrificing", hint: "Place an object carefully on an altar and pray over it." },
+        { word: "Awl", hint: "Push a sharp tool through thick leather with significant effort." },
+        { word: "Reins", hint: "Snap a leather strap forward with both hands." },
+        { word: "Shield", hint: "Block an invisible heavy blow with a forearm shield." },
+        { word: "Spear", hint: "Pull back your arm and throw a javelin." },
+        { word: "Toga wrapping", hint: "Spin around in a circle while wrapping a giant bedsheet around yourself." },
+        { word: "Measuring wood", hint: "Hold a piece of wood and mark it precisely with a tool." },
+        { word: "Selling food", hint: "Hand over an apple and take a coin in return." },
+        { word: "Extollo campfire", hint: "Rub hands together over a low flame to get warm." },
+        { word: "Name badge", hint: "Peel a backing off a sticker and slap it on your chest." },
+        { word: "Handing out bread", hint: "Break a loaf forcefully and pass pieces around a circle." },
+        { word: "Tying sandals", hint: "Criss-cross long laces up your calf and tie them." },
+        { word: "Marching in formation", hint: "March rigidly in a square pattern, turning sharply." },
+        { word: "Peeking out", hint: "Part a heavy curtain and look out carefully." },
+        { word: "Snoring loudly", hint: "Tilt head back, inhale deeply, and flutter lips on the exhale." },
+        { word: "Feeling a pulse", hint: "Press two fingers to your wrist and check an invisible watch." },
+        { word: "Handshake password", hint: "Shake hands, then tap your wrist twice stealthily." },
+        { word: "Pointing to Heaven", hint: "Look up and point straight up decisively." },
+        { word: "Ear to the wall", hint: "Press your ear flat against a surface and close your eyes to listen." },
+        { word: "Sweeping dirt", hint: "Push a heavy push-broom vigorously back and forth." },
+        { word: "Waving goodbye", hint: "Wave enthusiastically while wiping a tear from your eye." },
+        { word: "Book of Romans", hint: "Unroll a long scroll, write, then pretend to bind it into a book." },
+        { word: "Apostle Paul", hint: "Point to yourself, cross your wrists in chains, and preach passionately." },
+        { word: "Saul of Tarsus", hint: "Act very snobby, read a scroll closely, then pretend to be struck blind." },
+        { word: "Brutus Flavius Macro", hint: "March stiffly, cross your arms, look incredibly grumpy, and point to a sword." },
+        { word: "Brother Marcus", hint: "Shake someone's hand warmly, draw a fish in the dirt, and whisper." },
+        { word: "Sister Lucia", hint: "Curtsy, look around nervously for guards, and wave people into a cave." },
+        { word: "Emperor Nero", hint: "Sit on a throne, place a crown on your head, and point a thumb down." },
+        { word: "Fire of Rome", hint: "Wiggle fingers like massive flames rising, then point accusingly at someone." },
+        { word: "Worshipping in Secret", hint: "Put a finger to your lips, look around, and bow your head in prayer." },
+        { word: "Household Gods", hint: "Chisel a tiny statue, set it on a shelf, and bow down to it." },
+        { word: "Temple of Minerva", hint: "Draw a large building with columns in the air, then hammer an anvil." },
+        { word: "Temple of Saturn", hint: "Draw a large building, then pretend to harvest wheat and offer it up." },
+        { word: "Free Gift of God", hint: "Hand over an invisible wrapped box, then shake your head refusing payment." },
+        { word: "Eternal Life", hint: "Point to your heartbeat, draw a continuous infinity circle, and point to heaven." },
+        { word: "Renewing your mind", hint: "Tap your brain repeatedly, then smile and act completely transformed." },
+        { word: "New Creation", hint: "Mimic a caterpillar crawling, then burst outward into a flying butterfly." },
+        { word: "Separated from God", hint: "Interlock your fingers tightly, then struggle hard to pull them apart but fail." },
+        { word: "Christ died for sinners", hint: "Point to yourself, act guilty, then make a cross shape with your arms." },
+        { word: "Power of the Gospel", hint: "Flex your muscles strongly, then hold out a scroll and shout." },
+        { word: "Persecution", hint: "Cower in fear, block invisible thrown rocks, and run away." },
+        { word: "Stoning of Stephen", hint: "Act like a Pharisee nodding in approval while throwing heavy rocks." },
+        { word: "Road to Damascus", hint: "Walk confidently, get blinded by a flash, and fall to your knees." },
+        { word: "Healing Blindness", hint: "Grope around with eyes closed, have someone touch your eyes, and blink in amazement." },
+        { word: "Waiting for Trial", hint: "Sit down, cross your chained wrists, tap your foot, and check an invisible watch." },
+        { word: "Shift Change", hint: "Unlink your wrist from one person and link it to a different person." },
+        { word: "Sneaking into the Cave", hint: "Crouch low, walk on tiptoes, and crawl through a tight opening." },
+        { word: "Guard Patrols", hint: "March in a grid pattern, holding a spear, and peering into dark corners." },
+        { word: "Dodging a Centurion", hint: "Salute nervously, wipe sweat from your brow, and sigh in relief." },
+        { word: "Animal Sacrifice Salesman", hint: "Hold out an invisible struggling sheep and gesture for money." },
+        { word: "Architect leaving his job", hint: "Roll up blueprints, wave goodbye sadly, and walk away." },
+        { word: "Metalworker losing her shop", hint: "Hammer metal, shake your head defiantly, and hand over your tools." },
+        { word: "Food Shop Proprietor", hint: "Put on an invisible apron and hand out loaves of bread." },
+        { word: "Saving a thief", hint: "Step in front of someone cowering and hold up your hand to stop a beating." },
+        { word: "Fetching water", hint: "Run to a spot, dip a bucket into a river, and heave it back." },
+        { word: "Knocking down walls", hint: "Swing an invisible axe at a burning structure and push it over." },
+        { word: "Carrying a 90-pound pack", hint: "Heave a massive weight onto your back and stagger forward groaning." },
+        { word: "Fording a river", hint: "Step high as if wading through strong, deep currents." },
+        { word: "Throwing Knucklebones", hint: "Shake tiny objects in your hand, roll them, and cheer at the result." },
+        { word: "Pushing a Hoop", hint: "Jog forward while constantly tapping a rolling circle with a stick." },
+        { word: "Driving Wild Horses", hint: "Hold reins firmly, get jerked forward roughly, and pull back hard." },
+        { word: "Assembling a Wreath", hint: "Twist vines into a circle, carefully pinch leaves onto it, and crown yourself." },
+        { word: "Fastening a Toga", hint: "Throw a giant invisible sheet over your left shoulder and pin it." },
+        { word: "Stitching thick leather", hint: "Strain hard to push an awl through a belt, then pull the thread through." },
+        { word: "Hammering a metal bowl", hint: "Hold a bowl shape and tap it meticulously with a small hammer." },
+        { word: "Copying a scroll", hint: "Look at one scroll, dip a quill, and carefully write on a second scroll." },
+        { word: "Explaining the Fish code", hint: "Draw a half-curve, point to the other person to draw the second half, and nod." },
+        { word: "Singing 'Love Round'", hint: "Cup hands around mouth and direct invisible singers to sing in a round." },
+        { word: "Shouting a Family Cheer", hint: "Huddle in a circle, throw hands into the middle, and throw them up yelling." },
+        { word: "Dancing to Extollo Music", hint: "Do synchronized hand motions while singing a fast, joyful song." },
+        { word: "Wearing a Bandura", hint: "Tie a cloth strip around your arm and point to it proudly." },
+        { word: "Sending a Postcard", hint: "Write a note on a card, stick a stamp on it, and mail it." },
+        { word: "Applying Stickers", hint: "Peel tiny circles off a sheet and press them onto a card." },
+        { word: "Disappearing colorful puffs", hint: "Drop a puff into a cup, swirl it, and show the cup is empty." },
+        { word: "Spreading a tiny thing", hint: "Pinch something tiny, blow on it, and watch it expand everywhere." },
+        { word: "Flip-puzzle", hint: "Hold a flat square and constantly unfold it to reveal new pictures." },
+        { word: "Chain clanking", hint: "Lift a heavy chain and shake it vigorously next to your ear." },
+        { word: "Finding a heartbeat", hint: "Tell everyone to close their eyes, put a hand on their chest, and feel the thump." },
+        { word: "Rejecting a newborn baby", hint: "Look down at an invisible baby at your feet and shake your head 'no' and walk away." },
+        { word: "Midwife bathing a baby", hint: "Gently scrub an infant and place it at the father's feet." },
+        { word: "Selling into slavery", hint: "Put chains on an invisible person and hand them over for coins." },
+        { word: "Arranging a marriage", hint: "Point to two people, push them together, and nod approvingly." },
+        { word: "Flinging a traitor off a cliff", hint: "Grab someone by the collar, march them forward, and shove them off a ledge." },
+        { word: "A third of Rome being slaves", hint: "Count three people, point to the third one, and pretend to chain them." },
+        { word: "Sleeping on Duty", hint: "Stand holding a spear, lean against a wall, and start snoring loudly." },
+        { word: "Startled awake", hint: "Snore, gasp suddenly, jump up, and draw a sword in panic." },
+        { word: "Reassigning to stables", hint: "Take off a helmet, sigh, grab a shovel, and start scooping manure." },
+        { word: "Becoming a Jesus-follower", hint: "Put down a weapon, look up to heaven, and cross your arms over your chest happily." },
+        { word: "Marcus running", hint: "Look behind you terrified and run in place at maximum speed." },
+        { word: "Jumping over a vegetable cart", hint: "Run fast, hurdle a high object, and keep running." },
+        { word: "Melon stuck on head", hint: "Pull a round object over your head, act blinded, and stumble around blindly." },
+        { word: "Rats squeaking", hint: "Wiggle fingers like a scurrying rat, sniff the air, and squeak." },
+        { word: "Poking a spear into the dark", hint: "Hold a spear nervously and jab it into a dark cave without entering." },
+        { word: "Planning to meet in Catacombs", hint: "Unroll a map, point to a graveyard, and whisper to others to follow." },
+        { word: "Leaving Rome forever", hint: "Pack a bag, wave goodbye to the city, and walk away sadly." },
+        { word: "Marking a hand", hint: "Take a marker and draw the ichthys on someone else's palm." },
+        { word: "Holding hands to pray", hint: "Reach out to invisible people on both sides, link hands, and bow head." },
+        { word: "Sitting knee-to-knee", hint: "Sit on the floor, pull your knees up close, and gesture to someone right in front of you." },
+        { word: "Listening to a flute player", hint: "Close your eyes, sway gently, and pretend to play a transverse flute." },
+        { word: "Electric campfire flickering", hint: "Stare at the ground, wiggle fingers like flames, and warm your hands over it." },
+        { word: "Taping black plastic", hint: "Unroll a heavy trash bag and rip pieces of duct tape to secure it to a wall." },
+        { word: "Paper stones on the floor", hint: "Cut out large circles of paper and tape them to the ground in a line." },
+        { word: "Skeleton keys jingling", hint: "Hold a heavy iron ring, shake it loudly, and try a key in a lock." },
+        { word: "Reading a parchment roll", hint: "Unroll a long sheet of paper, squint at it, and read it aloud." },
+        { word: "Turning into a butterfly", hint: "Wrap yourself tightly like a cocoon, then break out and flap your wings." },
+        { word: "Washing away sins", hint: "Show dirty hands, pretend to wash them in water, and show them clean." },
+        { word: "Refusing to worship Emperor", hint: "Stand tall, cross your arms, and shake your head 'no' at a royal throne." },
+        { word: "Gathering donations", hint: "Walk around with a basket collecting imaginary coins from people." },
+        { word: "Aurelius Family", hint: "Point to a poster, tap a gold medal (Aurelius means golden), and cheer." },
+        { word: "Greeting with 'Salve'", hint: "Wave your hand and bow slightly in a formal greeting." },
+        { word: "Saying 'Vale'", hint: "Raise a hand in farewell and walk backward slowly." },
+        { word: "Making a speech", hint: "Stand nervously, clear your throat, and announce something important to a crowd." },
+        { word: "Blaming Christians", hint: "Point an accusing finger angrily at a group of innocent people." },
+        { word: "Listening to background music", hint: "Cup an ear, bob your head to the beat, and smile." },
+        { word: "Tying cables/zip ties", hint: "Thread a plastic tie, pull it tight with a zipping sound, and test its strength." },
+        { word: "Interrupting a lesson", hint: "Burst through a door waving your arms while someone else is talking." },
+        { word: "Biting fingernails", hint: "Chew on your fingers and pace back and forth nervously." },
+        { word: "Pointing a spear in the dark", hint: "Hold a long pole, squint into the blackness, and thrust it forward randomly." },
+        { word: "Wiping off a chalkboard", hint: "Write on a tablet, then take a flat edge and smooth the wax over to erase it." },
+        { word: "Guarding a prisoner", hint: "Look sternly at someone sitting on the floor and point a weapon at them if they move." },
+        { word: "Celebrating God's love", hint: "Throw both hands in the air, look up, and jump for joy." }
+      ]
+    };
+
+    // State Variables
+    let activeGrade = null;
+    let currentList = [];
+    let currentIndex = 0;
+    let deferredItems = [];
+    
+    let timeLeft = 60;
+    let timerDuration = 60;
+    let timerRunning = false;
+    let soundEnabled = true;
+    let isGetReady = true;
+    let roundScore = 0;
+
+    function updateScoreDisplay() {
+      const scorePortrait = document.getElementById('score-counter-portrait');
+      const scoreLeft = document.getElementById('score-counter-left');
+      
+      if (scorePortrait) {
+        scorePortrait.querySelector('span').textContent = roundScore;
+      }
+      if (scoreLeft) {
+        scoreLeft.querySelector('span').textContent = roundScore;
+      }
+    }
+
+    // Web Audio API Synth setup
+    let audioCtx = null;
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function playSound(type) {
+      try {
+        initAudio();
+        if (!soundEnabled || !audioCtx) return;
+
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        
+        const now = audioCtx.currentTime;
+        
+        if (type === 'click') {
+          osc.frequency.setValueAtTime(600, now);
+          osc.frequency.exponentialRampToValueAtTime(150, now + 0.08);
+          gain.gain.setValueAtTime(0.08, now);
+          gain.gain.linearRampToValueAtTime(0, now + 0.08);
+          osc.start(now);
+          osc.stop(now + 0.08);
+        } else if (type === 'tick') {
+          osc.frequency.setValueAtTime(1000, now);
+          gain.gain.setValueAtTime(0.04, now);
+          gain.gain.linearRampToValueAtTime(0, now + 0.04);
+          osc.start(now);
+          osc.stop(now + 0.04);
+        } else if (type === 'buzzer') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(140, now);
+          osc.frequency.setValueAtTime(260, now + 0.12);
+          gain.gain.setValueAtTime(0.12, now);
+          gain.gain.linearRampToValueAtTime(0, now + 0.25);
+          osc.start(now);
+          osc.stop(now + 0.25);
+        } else if (type === 'chime') {
+          osc.frequency.setValueAtTime(523.25, now); // C5
+          osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
+          osc.frequency.setValueAtTime(783.99, now + 0.16); // G5
+          osc.frequency.setValueAtTime(1046.50, now + 0.24); // C6
+          gain.gain.setValueAtTime(0.08, now);
+          gain.gain.linearRampToValueAtTime(0, now + 0.45);
+          osc.start(now);
+          osc.stop(now + 0.45);
+        }
+      } catch (e) {
+        console.warn('Audio Synthesis failed to play:', e);
+      }
+    }
+
+    // Shuffler Utility
+    function shuffleArray(array) {
+      const shuffled = [...array];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      return shuffled;
+    }
+
+    // Format Time Utility
+    function formatTime(seconds) {
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    // Config duration setting
+    function setGameDuration(value) {
+      timerDuration = parseInt(value, 10);
+      timeLeft = timerDuration;
+      playSound('click');
+    }
+
+    // Toggle Audio setting
+    function toggleSoundSetting() {
+      soundEnabled = !soundEnabled;
+      initAudio();
+      
+      const soundBtnMenu = document.getElementById('sound-toggle-menu');
+      const soundBtnGamePortrait = document.getElementById('sound-toggle-game-portrait');
+      const soundBtnGameLeft = document.getElementById('sound-toggle-game-left');
+      const soundIconMenu = document.getElementById('sound-icon-menu');
+      
+      if (soundEnabled) {
+        soundBtnMenu.textContent = 'Enabled';
+        soundBtnMenu.classList.remove('opacity-60');
+        if (soundBtnGamePortrait) {
+          soundBtnGamePortrait.classList.remove('opacity-40');
+          soundBtnGamePortrait.querySelector('i').className = 'fa-solid fa-volume-high text-xs';
+        }
+        if (soundBtnGameLeft) {
+          soundBtnGameLeft.classList.remove('opacity-40');
+          soundBtnGameLeft.querySelector('i').className = 'fa-solid fa-volume-high text-xs';
+        }
+        if (soundIconMenu) soundIconMenu.className = 'fa-solid fa-volume-high text-romanRed';
+        playSound('click');
+      } else {
+        soundBtnMenu.textContent = 'Muted';
+        soundBtnMenu.classList.add('opacity-60');
+        if (soundBtnGamePortrait) {
+          soundBtnGamePortrait.classList.add('opacity-40');
+          soundBtnGamePortrait.querySelector('i').className = 'fa-solid fa-volume-xmark text-xs';
+        }
+        if (soundBtnGameLeft) {
+          soundBtnGameLeft.classList.add('opacity-40');
+          soundBtnGameLeft.querySelector('i').className = 'fa-solid fa-volume-xmark text-xs';
+        }
+        if (soundIconMenu) soundIconMenu.className = 'fa-solid fa-volume-xmark text-gray-500';
+      }
+    }
+
+    // Start Game trigger
+    function startGame(grade) {
+      initAudio();
+      playSound('click');
+      activeGrade = grade;
+      
+      const data = grade === '1st' ? charadesData.grade1 : charadesData.grade4;
+      currentList = shuffleArray(data);
+      currentIndex = 0;
+      deferredItems = [];
+      timeLeft = timerDuration;
+      timerRunning = false;
+      isGetReady = true;
+      roundScore = 0;
+      updateScoreDisplay();
+      
+      // Update UI panels for get ready phase
+      document.getElementById('gameplay-actions').classList.add('hidden');
+      const playBtnPortrait = document.getElementById('timer-play-btn-portrait');
+      const playBtnLeft = document.getElementById('timer-play-btn-left');
+      if (playBtnPortrait) playBtnPortrait.classList.add('opacity-50', 'pointer-events-none');
+      if (playBtnLeft) playBtnLeft.classList.add('opacity-50', 'pointer-events-none');
+      
+      // Update UI displays
+      updateProgressDisplay();
+      updateTimerDisplay();
+      updateTimerControls();
+      renderCurrentCard();
+      
+      // Switch screen view
+      switchScreen('menu-screen', 'playing-screen');
+    }
+
+    // Start Round transition
+    function startRound() {
+      initAudio();
+      playSound('click');
+      isGetReady = false;
+      timerRunning = true; // start countdown
+      
+      // Toggle actions
+      document.getElementById('gameplay-actions').classList.remove('hidden');
+      const playBtnPortrait = document.getElementById('timer-play-btn-portrait');
+      const playBtnLeft = document.getElementById('timer-play-btn-left');
+      if (playBtnPortrait) playBtnPortrait.classList.remove('opacity-50', 'pointer-events-none');
+      if (playBtnLeft) playBtnLeft.classList.remove('opacity-50', 'pointer-events-none');
+      
+      // Update display to first card
+      updateProgressDisplay();
+      updateTimerDisplay();
+      updateTimerControls();
+      renderCurrentCard();
+    }
+
+    // Exit Game back to menu
+    function exitGame() {
+      playSound('click');
+      timerRunning = false;
+      switchScreen(document.getElementById('playing-screen').classList.contains('hidden') ? 'done-screen' : 'playing-screen', 'menu-screen');
+    }
+
+    // Render word and hint on gameplay screen
+    function renderCurrentCard() {
+      const wordDisplay = document.getElementById('word-display');
+      const hintDisplay = document.getElementById('hint-display');
+      const cardStartBtnContainer = document.getElementById('card-start-btn-container');
+      
+      const isLandscape = window.innerWidth > window.innerHeight;
+
+      if (isGetReady) {
+        wordDisplay.textContent = "GET READY";
+        wordDisplay.className = "font-black text-romanRed tracking-tight select-none leading-tight py-1 font-cinzel uppercase text-center animate-pulse transition-all duration-300";
+        
+        let getReadySize = isLandscape ? 'clamp(2.2rem, 5.5vw, 3.2rem)' : 'clamp(2.8rem, 8vw, 4.5rem)';
+        wordDisplay.style.fontSize = getReadySize;
+
+        hintDisplay.textContent = "Get ready to act out the words! Position the actor so they can see this card. Click below or press spacebar when you are ready to begin the timer.";
+        cardStartBtnContainer.classList.remove('hidden');
+        return;
+      }
+      
+      cardStartBtnContainer.classList.add('hidden');
+      
+      const item = currentList[currentIndex];
+      if (!item) return;
+
+      // Reset styles and inject content
+      wordDisplay.textContent = item.word;
+      hintDisplay.textContent = item.hint;
+      
+      // Responsive dynamic font adjustments to prevent wrapping in the middle of words
+      const charLength = item.word.length;
+      wordDisplay.className = "font-black text-romanRed tracking-tight break-normal select-none leading-tight py-1 font-cinzel uppercase max-w-full text-center transition-all duration-300";
+      
+      let fontSize;
+      if (isLandscape) {
+        if (charLength <= 10) {
+          fontSize = 'clamp(2.2rem, 5.5vw, 3.2rem)';
+        } else {
+          fontSize = 'clamp(1.7rem, 4.2vw, 2.6rem)';
+        }
+      } else {
+        if (charLength <= 10) {
+          fontSize = 'clamp(2.8rem, 8vw, 4.5rem)';
+        } else {
+          fontSize = 'clamp(2.2rem, 6.5vw, 3.5rem)';
+        }
+      }
+      wordDisplay.style.fontSize = fontSize;
+    }
+
+    // Next word handler
+    function handleNextWord(status) {
+      playSound('click');
+      const currentItem = currentList[currentIndex];
+      
+      if (status === 'right') {
+        roundScore++;
+        updateScoreDisplay();
+      }
+      
+      if (status === 'wrong' || status === 'skip') {
+        deferredItems.push(currentItem);
+      }
+      
+      if (currentIndex < currentList.length - 1) {
+        currentIndex++;
+        if (timeLeft === 0) {
+          timeLeft = timerDuration;
+          roundScore = 0;
+          updateScoreDisplay();
+          timerRunning = true;
+          updateTimerDisplay();
+          updateTimerControls();
+        }
+        updateProgressDisplay();
+        renderCurrentCard();
+      } else {
+        // Evaluate deferred items
+        if (deferredItems.length > 0) {
+          currentList = shuffleArray(deferredItems);
+          currentIndex = 0;
+          deferredItems = [];
+          if (timeLeft === 0) {
+            timeLeft = timerDuration;
+            roundScore = 0;
+            updateScoreDisplay();
+            timerRunning = true;
+            updateTimerDisplay();
+            updateTimerControls();
+          }
+          updateProgressDisplay();
+          renderCurrentCard();
+          showToast(`Round finished! Reshuffling ${currentList.length} deferred words.`);
+        } else {
+          // Finished all words!
+          timerRunning = false;
+          
+          // Setup done screen stats
+          document.getElementById('level-stat').textContent = activeGrade === '1st' ? '1st Grade Level (Concrete)' : '4th Grade Level (Abstract)';
+          document.getElementById('duration-stat').textContent = `${timerDuration} seconds`;
+          
+          switchScreen('playing-screen', 'done-screen');
+          playSound('chime');
+        }
+      }
+    }
+
+    // Screen swapper utility
+    function switchScreen(fromId, toId) {
+      const fromEl = document.getElementById(fromId);
+      const toEl = document.getElementById(toId);
+      
+      fromEl.classList.add('screen-hidden');
+      toEl.classList.remove('screen-hidden');
+    }
+
+    // Toggle Play/Pause on countdown timer
+    function toggleTimer() {
+      initAudio();
+      playSound('click');
+      
+      if (timeLeft === 0) {
+        timeLeft = timerDuration;
+        roundScore = 0;
+        updateScoreDisplay();
+        updateTimerDisplay();
+      }
+      
+      timerRunning = !timerRunning;
+      updateTimerControls();
+    }
+
+    // Reset countdown timer
+    function resetTimer() {
+      playSound('click');
+      timerRunning = false;
+      timeLeft = timerDuration;
+      roundScore = 0;
+      updateScoreDisplay();
+      updateTimerDisplay();
+      updateTimerControls();
+    }
+
+    // Device Vibration Utility
+    function triggerVibration(type) {
+      if ('vibrate' in navigator) {
+        if (type === 'warning') {
+          navigator.vibrate(200);
+        } else if (type === 'done') {
+          navigator.vibrate(600);
+        }
+      }
+    }
+
+    // Timer Tick Interval Loop (runs continuously, ticks only when running)
+    setInterval(() => {
+      if (timerRunning) {
+        if (timeLeft > 0) {
+          timeLeft--;
+          updateTimerDisplay();
+          
+          // Audio cues during low timer
+          if (timeLeft <= 5 && timeLeft > 0) {
+            playSound('tick');
+          }
+          
+          // Vibration cues
+          if (timeLeft === 10) {
+            triggerVibration('warning');
+          }
+          
+          if (timeLeft === 0) {
+            timerRunning = false;
+            updateTimerControls();
+            playSound('buzzer');
+            triggerVibration('done');
+            showToast("Time's Up!");
+          }
+        }
+      }
+    }, 1000);
+
+    // Update Digital clock readout
+    function updateTimerDisplay() {
+      const readoutPortrait = document.getElementById('timer-readout-portrait');
+      const readoutLeft = document.getElementById('timer-readout-left');
+      const timeStr = formatTime(timeLeft);
+      
+      const updateEl = (readout, isPortrait) => {
+        if (!readout) return;
+        readout.textContent = timeStr;
+        const sizeClass = isPortrait ? "text-4xl sm:text-5xl" : "text-lg";
+        if (timeLeft <= 10 && timeLeft > 0) {
+          readout.className = `${sizeClass} font-mono font-black text-red-700 tracking-tight animate-pulse`;
+        } else if (timeLeft === 0) {
+          readout.className = `${sizeClass} font-mono font-black text-red-800 tracking-tight`;
+        } else {
+          readout.className = `${sizeClass} font-mono font-black text-[#3d2314] tracking-tight`;
+        }
+      };
+
+      updateEl(readoutPortrait, true);
+      updateEl(readoutLeft, false);
+    }
+
+    // Update Pause/Play button visual controls
+    function updateTimerControls() {
+      const playBtnPortrait = document.getElementById('timer-play-btn-portrait');
+      const playBtnLeft = document.getElementById('timer-play-btn-left');
+      
+      const updateBtn = (playBtn, isLeft) => {
+        if (!playBtn) return;
+        const sizeClass = isLeft ? "w-10 h-10" : "w-12 h-12 sm:w-14 sm:h-14";
+        const flexShrinkClass = isLeft ? "" : " flex-shrink-0";
+        if (timerRunning) {
+          playBtn.innerHTML = '<i class="fa-solid fa-pause text-base sm:text-lg"></i>';
+          playBtn.className = `${sizeClass} rounded-full bg-romanGold hover:bg-[#b08d4b] active:scale-95 text-white flex items-center justify-center transition-all shadow-md shadow-romanGold/20 border border-romanGold/30${flexShrinkClass}`;
+        } else {
+          playBtn.innerHTML = '<i class="fa-solid fa-play text-base sm:text-lg"></i>';
+          playBtn.className = `${sizeClass} rounded-full bg-romanRed hover:bg-red-700 active:scale-95 text-white flex items-center justify-center transition-all shadow-md shadow-red-950/20 border border-romanGold/30${flexShrinkClass}`;
+        }
+      };
+
+      updateBtn(playBtnPortrait, false);
+      updateBtn(playBtnLeft, true);
+    }
+
+    // Update Progress counter and glowing bar
+    function updateProgressDisplay() {
+      const counterPortrait = document.getElementById('progress-counter-portrait');
+      const counterLeft = document.getElementById('progress-counter-left');
+      const progressBarPortrait = document.getElementById('progress-bar-portrait');
+      
+      if (isGetReady) {
+        if (counterPortrait) counterPortrait.textContent = "READY";
+        if (counterLeft) counterLeft.textContent = "READY";
+        if (progressBarPortrait) progressBarPortrait.style.width = `0%`;
+        return;
+      }
+      
+      const text = `${currentIndex + 1} / ${currentList.length}`;
+      if (counterPortrait) counterPortrait.textContent = text;
+      if (counterLeft) counterLeft.textContent = text;
+      
+      const pct = ((currentIndex) / currentList.length) * 100;
+      if (progressBarPortrait) progressBarPortrait.style.width = `${pct}%`;
+    }
+
+    // Fullscreen toggler using Fullscreen Web API
+    function toggleFullscreen() {
+      playSound('click');
+      if (!document.fullscreenElement &&
+          !document.mozFullScreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement) {
+        const docEl = document.documentElement;
+        if (docEl.requestFullscreen) docEl.requestFullscreen();
+        else if (docEl.mozRequestFullScreen) docEl.mozRequestFullScreen();
+        else if (docEl.webkitRequestFullscreen) docEl.webkitRequestFullscreen();
+        else if (docEl.msRequestFullscreen) docEl.msRequestFullscreen();
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+        else if (document.mozCancelFullScreen) document.mozCancelFullScreen();
+        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+        else if (document.msExitFullscreen) document.msExitFullscreen();
+      }
+    }
+
+    function updateFullscreenButtons() {
+      const isFull = !!(document.fullscreenElement || document.mozFullScreenElement || 
+                        document.webkitFullscreenElement || document.msFullscreenElement);
+      
+      const iconClass = isFull ? 'fa-compress' : 'fa-expand';
+      const labelText = isFull ? 'Exit Fullscreen' : 'Fullscreen';
+      
+      const btnPortrait = document.getElementById('fullscreen-btn-portrait');
+      const btnLeft = document.getElementById('fullscreen-btn-left');
+      const btnMenu = document.getElementById('fullscreen-btn-menu');
+      
+      if (btnPortrait) btnPortrait.querySelector('i').className = `fa-solid ${iconClass} text-xs`;
+      if (btnLeft) btnLeft.querySelector('i').className = `fa-solid ${iconClass} text-xs`;
+      
+      if (btnMenu) {
+        btnMenu.querySelector('i').className = `fa-solid ${iconClass} text-lg`;
+        btnMenu.querySelector('.btn-label').textContent = labelText;
+      }
+    }
+
+    // Fullscreen listeners
+    document.addEventListener('fullscreenchange', updateFullscreenButtons);
+    document.addEventListener('webkitfullscreenchange', updateFullscreenButtons);
+    document.addEventListener('mozfullscreenchange', updateFullscreenButtons);
+    document.addEventListener('MSFullscreenChange', updateFullscreenButtons);
+
+    // Dynamic resize listener to update responsive font scaling & layouts
+    window.addEventListener('resize', () => {
+      const playingScreen = document.getElementById('playing-screen');
+      if (playingScreen && !playingScreen.classList.contains('screen-hidden')) {
+        renderCurrentCard();
+      }
+    });
+
+
+
+    // Toast notification utility
+    function showToast(message) {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      
+      toast.className = "bg-romanWood text-romanSand border border-romanGold/30 text-xs px-4 py-3 rounded-2xl shadow-xl flex items-center justify-center gap-2 font-semibold tracking-wide uppercase transition-all duration-300 transform translate-y-4 opacity-0 pointer-events-none";
+      toast.innerHTML = `<i class="fa-solid fa-circle-info text-romanGold animate-pulse"></i> <span>${message}</span>`;
+      
+      container.appendChild(toast);
+      
+      // Fade in
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-4', 'opacity-0');
+      });
+      
+      // Remove
+      setTimeout(() => {
+        toast.classList.add('translate-y-4', 'opacity-0');
+        setTimeout(() => toast.remove(), 300);
+      }, 2500);
+    }
+  </script>
+</body>
+</html>

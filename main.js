@@ -43,7 +43,10 @@ if (toolListEl) {
         // Format the folder name to be more readable
         const displayName = folderName
           .split('-')
-          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .map(word => {
+            if (word.toLowerCase() === 'vbs') return 'VBS';
+            return word.charAt(0).toUpperCase() + word.slice(1);
+          })
           .join(' ');
 
         const randomIcon = techIcons[index % techIcons.length];
