@@ -208,7 +208,7 @@ const state = {
 
 // Last successful run snapshot. Views render from this, never live state.
 let run = null; // { model, bEnabled, items:[{id,role,title,text,prompts:{A,B?}}], vectors:{prompt->Float64Array-ish} }
-const vecCache = new Map(); // `${model} ${prompt}` -> number[]
+const vecCache = new Map(); // `${model}\n${prompt}` -> number[]
 let running = false;
 
 /* ============================================================
@@ -323,7 +323,7 @@ function csvCell(s) {
  * Gemini API
  * ============================================================ */
 async function embedOne(prompt) {
-    const key = `${state.model} ${prompt}`;
+    const key = `${state.model}\n${prompt}`;
     if (vecCache.has(key)) return vecCache.get(key);
 
     const url = `${API_BASE}${encodeURIComponent(state.model)}:embedContent`;
@@ -359,7 +359,7 @@ async function embedOne(prompt) {
 
 async function embedAll(prompts, onProgress) {
     const unique = [...new Set(prompts)];
-    const todo = unique.filter(p => !vecCache.has(`${state.model} ${p}`));
+    const todo = unique.filter(p => !vecCache.has(`${state.model}\n${p}`));
     let done = unique.length - todo.length;
     onProgress(done, unique.length, unique.length - todo.length);
     let idx = 0;
@@ -434,7 +434,7 @@ function setStale(isStale) {
 }
 function markDirty() { setStale(true); saveSoon(); }
 
-function getVec(prompt) { return vecCache.get(`${run.model} ${prompt}`) || null; }
+function getVec(prompt) { return vecCache.get(`${run.model}\n${prompt}`) || null; }
 function simOf(a, b, profile) {
     const va = getVec(a.prompts[profile]), vb = getVec(b.prompts[profile]);
     return (va && vb) ? cosine(va, vb) : NaN;
