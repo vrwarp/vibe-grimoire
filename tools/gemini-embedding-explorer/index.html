@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini Embedding Explorer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f9f9f7;
+            color: #334155;
+        }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        .viz-root {
+            --surface-1: #fcfcfb;
+            --text-primary: #0b0b0b;
+            --text-secondary: #52514e;
+            --muted: #898781;
+            --grid: #e1e0d9;
+            --series-1: #2a78d6;   /* blue  — profile A */
+            --series-2: #1baf7a;   /* aqua  — profile B */
+        }
+        textarea { resize: vertical; }
+        .mono-num { font-variant-numeric: tabular-nums; }
+
+        .heat-cell { position: relative; transition: outline-color .1s; outline: 2px solid transparent; outline-offset: -2px; }
+        .heat-cell:hover { outline-color: #0b0b0b; z-index: 5; }
+
+        #tooltip {
+            position: fixed; pointer-events: none; z-index: 50;
+            background: #0b0b0b; color: #fff; border-radius: 8px;
+            padding: 8px 10px; font-size: 12px; max-width: 320px;
+            box-shadow: 0 4px 12px rgba(0,0,0,.25);
+            display: none;
+        }
+        .drag-over { outline: 2px dashed #2a78d6; outline-offset: -2px; background-color: #eff6ff; }
+
+        details > summary { list-style: none; cursor: pointer; }
+        details > summary::-webkit-details-marker { display: none; }
+        details[open] .chevron { transform: rotate(90deg); }
+        .chevron { transition: transform .15s; }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div class="max-w-7xl mx-auto px-4 py-6">
+        <a href="../../" class="text-blue-600 hover:text-blue-800 font-medium inline-flex items-center">
+            <i class="fa-solid fa-arrow-left mr-2"></i> Back to Tools
+        </a>
+
+        <header class="mt-4 mb-6">
+            <h1 class="text-2xl font-bold text-slate-800">Gemini Embedding Explorer</h1>
+            <p class="text-slate-500 mt-1 text-sm max-w-3xl">
+                Explore <code class="bg-slate-100 px-1 rounded">gemini-embedding-2</code>, Google's multimodal embedding model.
+                It has no <code class="bg-slate-100 px-1 rounded">task_type</code> parameter — you steer embeddings by writing a
+                <strong>task instruction directly into the prompt</strong> (e.g. <code class="bg-slate-100 px-1 rounded">task: search result | query: …</code>).
+                Add queries and markdown documents, experiment with instructions, and compare cosine similarities.
+            </p>
+        </header>
+
+        <!-- ==================== SETUP ==================== -->
+        <section class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 mb-4">
+            <h2 class="font-semibold text-slate-700 mb-3"><i class="fa-solid fa-key text-blue-600 mr-2"></i>API Setup</h2>
+            <div class="grid md:grid-cols-3 gap-3">
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Google AI Studio API key</label>
+                    <div class="relative">
+                        <input id="apiKey" type="password" placeholder="AIza..." autocomplete="off"
+                               class="w-full border border-slate-300 rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <button id="toggleKey" type="button" class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 px-1" title="Show/hide key">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-1">Stored only in this browser's localStorage; sent only to <code>generativelanguage.googleapis.com</code>. Get one at <a class="text-blue-600 hover:underline" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">AI Studio</a>.</p>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Model</label>
+                    <input id="modelName" type="text" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <p class="text-xs text-slate-400 mt-1">Default <code>gemini-embedding-2</code>; also accepts e.g. <code>gemini-embedding-001</code>.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== INSTRUCTION PROFILES ==================== -->
+        <section class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 mb-4">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-1">
+                <h2 class="font-semibold text-slate-700"><i class="fa-solid fa-wand-magic-sparkles text-blue-600 mr-2"></i>Task Instruction Templates</h2>
+                <label class="inline-flex items-center gap-2 text-sm text-slate-600 cursor-pointer select-none">
+                    <input id="enableB" type="checkbox" class="accent-blue-600 w-4 h-4">
+                    Enable profile <strong>B</strong> (A/B comparison)
+                </label>
+            </div>
+            <p class="text-xs text-slate-400 mb-3">Placeholders: <code class="bg-slate-100 px-1 rounded">{text}</code> = item content, <code class="bg-slate-100 px-1 rounded">{title}</code> = item title. A template without <code>{text}</code> is treated as a prefix.</p>
+            <div id="profilesWrap" class="grid gap-4 md:grid-cols-1"></div>
+        </section>
+
+        <!-- ==================== ITEMS ==================== -->
+        <section class="grid lg:grid-cols-2 gap-4 mb-4">
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="font-semibold text-slate-700"><i class="fa-solid fa-magnifying-glass text-blue-600 mr-2"></i>Queries <span id="queryCount" class="text-slate-400 font-normal text-sm"></span></h2>
+                    <button data-add-role="query" class="add-item-btn text-sm bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg"><i class="fa-solid fa-plus mr-1"></i>Add query</button>
+                </div>
+                <div id="queryList" class="space-y-3"></div>
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4" id="docDropZone">
+                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <h2 class="font-semibold text-slate-700"><i class="fa-solid fa-file-lines text-blue-600 mr-2"></i>Documents <span id="docCount" class="text-slate-400 font-normal text-sm"></span></h2>
+                    <div class="flex gap-2">
+                        <button id="uploadDocsBtn" class="text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg border border-slate-200"><i class="fa-solid fa-upload mr-1"></i>Upload .md</button>
+                        <input id="docFileInput" type="file" accept=".md,.markdown,.txt" multiple class="hidden">
+                        <button data-add-role="doc" class="add-item-btn text-sm bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg"><i class="fa-solid fa-plus mr-1"></i>Add document</button>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-400 mb-2"><i class="fa-solid fa-hand-pointer mr-1"></i>Drag &amp; drop markdown files anywhere on this panel.</p>
+                <div id="docList" class="space-y-3"></div>
+            </div>
+        </section>
+
+        <!-- ==================== RUN BAR ==================== -->
+        <section class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 mb-4">
+            <div class="flex flex-wrap items-center gap-3">
+                <button id="runBtn" class="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white font-semibold px-5 py-2.5 rounded-lg text-sm">
+                    <i class="fa-solid fa-play mr-2"></i>Embed &amp; Compare
+                </button>
+                <div id="runStatus" class="text-sm text-slate-500"></div>
+                <div id="staleBadge" class="hidden text-xs bg-amber-50 text-amber-700 border border-amber-200 px-2 py-1 rounded-lg"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Inputs changed since last run — results below are stale.</div>
+            </div>
+            <div id="runError" class="hidden mt-3 text-sm bg-red-50 text-red-700 border border-red-200 rounded-lg px-3 py-2 whitespace-pre-wrap"></div>
+        </section>
+
+        <!-- ==================== RESULTS ==================== -->
+        <section class="bg-white rounded-xl border border-slate-200 shadow-sm mb-10">
+            <div class="border-b border-slate-200 px-4 pt-3 flex flex-wrap gap-1" id="tabBar">
+                <button data-tab="heatmap" class="tab-btn px-3 py-2 text-sm font-medium rounded-t-lg">Heatmap</button>
+                <button data-tab="ranked" class="tab-btn px-3 py-2 text-sm font-medium rounded-t-lg">Ranked Retrieval</button>
+                <button data-tab="ab" class="tab-btn px-3 py-2 text-sm font-medium rounded-t-lg">A/B Shifts</button>
+                <button data-tab="export" class="tab-btn px-3 py-2 text-sm font-medium rounded-t-lg">Export</button>
+            </div>
+            <div class="p-4 viz-root" id="resultsBody"></div>
+        </section>
+    </div>
+
+    <div id="tooltip"></div>
+
+<script>
+(() => {
+'use strict';
+
+/* ============================================================
+ * Constants
+ * ============================================================ */
+const LS_KEY = 'gemini-embedding-explorer:v1';
+const API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models/';
+const CONCURRENCY = 3;
+const MAX_RETRIES = 4;
+
+// Google's documented instruction formats for gemini embedding models.
+const PRESETS = [
+    { label: 'Search (query)',      role: 'query', tpl: 'task: search result | query: {text}' },
+    { label: 'Search (document)',   role: 'doc',   tpl: 'title: {title} | text: {text}' },
+    { label: 'Question answering',  role: 'query', tpl: 'task: question answering | query: {text}' },
+    { label: 'Fact checking',       role: 'query', tpl: 'task: fact checking | query: {text}' },
+    { label: 'Sentence similarity', role: 'both',  tpl: 'task: sentence similarity | query: {text}' },
+    { label: 'Classification',      role: 'both',  tpl: 'task: classification | query: {text}' },
+    { label: 'Clustering',          role: 'both',  tpl: 'task: clustering | query: {text}' },
+    { label: 'Code retrieval',      role: 'query', tpl: 'task: code retrieval | query: {text}' },
+    { label: 'Raw (no instruction)',role: 'both',  tpl: '{text}' },
+];
+
+// Sequential blue ramp (light mode), light -> dark. Magnitude encoding for the heatmap.
+const SEQ_RAMP = ['#cde2fb','#b7d3f6','#9ec5f4','#86b6ef','#6da7ec','#5598e7','#3987e5','#2a78d6','#256abf','#1c5cab','#184f95','#104281','#0d366b'];
+// Diverging arms for the A/B delta view: blue (negative) <- neutral -> red (positive).
+const DIV_NEG = ['#f0efec','#b7d3f6','#86b6ef','#5598e7','#2a78d6','#1c5cab','#104281'];
+const DIV_POS = ['#f0efec','#f6cdc9','#efa49e','#e97a74','#e34948','#b93a39','#8f2c2b'];
+
+const SAMPLE_ITEMS = [
+    { role: 'query', title: 'Feeding a sourdough starter', text: 'How often should I feed my sourdough starter?' },
+    { role: 'query', title: 'Bread not rising', text: 'Why is my bread dense and not rising properly?' },
+    { role: 'doc', title: 'Sourdough Starter Care', text: '# Sourdough Starter Care\n\nA sourdough starter should be fed **once every 24 hours** at room temperature, or weekly if refrigerated. Discard half, then add equal parts flour and water by weight.' },
+    { role: 'doc', title: 'Common Bread Failures', text: '# Common Bread Failures\n\nDense loaves usually come from under-proofing, weak yeast, or too much flour. Check that your yeast is alive and give the dough enough time to double in size.' },
+    { role: 'doc', title: 'Choosing Bread Flour', text: '# Choosing Bread Flour\n\nBread flour has 12–14% protein, which builds stronger gluten than all-purpose flour. Whole-grain flours absorb more water and ferment faster.' },
+];
+
+/* ============================================================
+ * State
+ * ============================================================ */
+let uid = 1;
+const newId = () => 'i' + (uid++);
+
+const state = {
+    apiKey: '',
+    model: 'gemini-embedding-2',
+    profiles: {
+        A: { query: 'task: search result | query: {text}', doc: 'title: {title} | text: {text}' },
+        B: { enabled: false, query: 'task: sentence similarity | query: {text}', doc: 'task: sentence similarity | query: {text}' },
+    },
+    items: [], // {id, role:'query'|'doc', title, text, override:{enabled, template}}
+    ui: { tab: 'heatmap', scope: 'qd', heatProfile: 'A', rankedQueryId: null },
+};
+
+// Last successful run snapshot. Views render from this, never live state.
+let run = null; // { model, bEnabled, items:[{id,role,title,text,prompts:{A,B?}}], vectors:{prompt->Float64Array-ish} }
+const vecCache = new Map(); // `${model} ${prompt}` -> number[]
+let running = false;
+
+/* ============================================================
+ * Persistence
+ * ============================================================ */
+function saveState() {
+    try {
+        localStorage.setItem(LS_KEY, JSON.stringify({
+            apiKey: state.apiKey, model: state.model, profiles: state.profiles,
+            items: state.items, ui: state.ui,
+        }));
+    } catch (e) { /* storage full or unavailable — non-fatal */ }
+}
+const saveSoon = debounce(saveState, 400);
+
+function loadState() {
+    let raw = null;
+    try { raw = localStorage.getItem(LS_KEY); } catch (e) { /* ignore */ }
+    if (!raw) {
+        state.items = SAMPLE_ITEMS.map(s => ({ id: newId(), override: { enabled: false, template: '' }, ...s }));
+        return;
+    }
+    try {
+        const s = JSON.parse(raw);
+        Object.assign(state, {
+            apiKey: s.apiKey || '', model: s.model || 'gemini-embedding-2',
+            profiles: s.profiles || state.profiles,
+            items: Array.isArray(s.items) ? s.items : [],
+            ui: Object.assign(state.ui, s.ui || {}),
+        });
+        // Re-key ids to keep the uid counter ahead of stored ids.
+        for (const it of state.items) {
+            const n = parseInt(String(it.id).slice(1), 10);
+            if (!Number.isNaN(n)) uid = Math.max(uid, n + 1);
+            if (!it.override) it.override = { enabled: false, template: '' };
+        }
+    } catch (e) {
+        state.items = SAMPLE_ITEMS.map(s => ({ id: newId(), override: { enabled: false, template: '' }, ...s }));
+    }
+}
+
+/* ============================================================
+ * Utilities
+ * ============================================================ */
+function debounce(fn, ms) {
+    let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
+}
+function esc(s) {
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function snippet(s, n = 90) {
+    s = String(s).replace(/\s+/g, ' ').trim();
+    return s.length > n ? s.slice(0, n - 1) + '…' : s;
+}
+function fmt(x, d = 3) { return Number.isFinite(x) ? x.toFixed(d) : '—'; }
+
+function buildPrompt(template, item) {
+    const t = template ?? '';
+    if (t.includes('{text}')) {
+        return t.replaceAll('{title}', item.title || 'none').replaceAll('{text}', item.text);
+    }
+    // Prefix-style template: no {text} placeholder.
+    const prefix = t.replaceAll('{title}', item.title || 'none');
+    return prefix ? prefix + '\n' + item.text : item.text;
+}
+function effectiveTemplate(item, profile) {
+    if (profile === 'A' && item.override?.enabled && item.override.template.trim() !== '') {
+        return item.override.template;
+    }
+    return state.profiles[profile][item.role === 'query' ? 'query' : 'doc'];
+}
+function effectivePrompt(item, profile) {
+    return buildPrompt(effectiveTemplate(item, profile), item);
+}
+
+function cosine(a, b) {
+    let dot = 0, na = 0, nb = 0;
+    for (let i = 0; i < a.length; i++) { dot += a[i]*b[i]; na += a[i]*a[i]; nb += b[i]*b[i]; }
+    const d = Math.sqrt(na) * Math.sqrt(nb);
+    return d === 0 ? 0 : dot / d;
+}
+
+// Perceived-luminance switch for readable text on a colored cell.
+function inkFor(hex) {
+    const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+    return (0.299*r + 0.587*g + 0.114*b) > 150 ? '#0b0b0b' : '#ffffff';
+}
+function seqColor(v, min, max) {
+    const t = max > min ? (v - min) / (max - min) : 0.5;
+    return SEQ_RAMP[Math.max(0, Math.min(SEQ_RAMP.length - 1, Math.round(t * (SEQ_RAMP.length - 1))))];
+}
+function divColor(v, maxAbs) {
+    if (maxAbs <= 0) return DIV_NEG[0];
+    const arm = v < 0 ? DIV_NEG : DIV_POS;
+    const t = Math.min(1, Math.abs(v) / maxAbs);
+    return arm[Math.max(0, Math.min(arm.length - 1, Math.round(t * (arm.length - 1))))];
+}
+
+function download(filename, text, mime) {
+    const blob = new Blob([text], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+function csvCell(s) {
+    s = String(s);
+    return /[",\n]/.test(s) ? '"' + s.replaceAll('"', '""') + '"' : s;
+}
+
+/* ============================================================
+ * Gemini API
+ * ============================================================ */
+async function embedOne(prompt) {
+    const key = `${state.model} ${prompt}`;
+    if (vecCache.has(key)) return vecCache.get(key);
+
+    const url = `${API_BASE}${encodeURIComponent(state.model)}:embedContent`;
+    let lastErr = null;
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        if (attempt > 0) await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt - 1)));
+        let res;
+        try {
+            res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-goog-api-key': state.apiKey },
+                body: JSON.stringify({ content: { parts: [{ text: prompt }] } }),
+            });
+        } catch (e) {
+            lastErr = new Error('Network error: ' + e.message);
+            continue;
+        }
+        if (res.status === 429 || res.status >= 500) {
+            lastErr = new Error(`HTTP ${res.status} (rate limit / server error)`);
+            continue;
+        }
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            throw new Error(body?.error?.message || `HTTP ${res.status}`);
+        }
+        const values = body?.embedding?.values;
+        if (!Array.isArray(values)) throw new Error('Unexpected API response: no embedding.values');
+        vecCache.set(key, values);
+        return values;
+    }
+    throw lastErr || new Error('Embedding failed');
+}
+
+async function embedAll(prompts, onProgress) {
+    const unique = [...new Set(prompts)];
+    const todo = unique.filter(p => !vecCache.has(`${state.model} ${p}`));
+    let done = unique.length - todo.length;
+    onProgress(done, unique.length, unique.length - todo.length);
+    let idx = 0;
+    let firstError = null;
+    async function worker() {
+        while (idx < todo.length) {
+            const p = todo[idx++];
+            try {
+                await embedOne(p);
+            } catch (e) {
+                if (!firstError) firstError = e;
+                return; // stop this worker on hard failure
+            }
+            done++;
+            onProgress(done, unique.length, unique.length - todo.length);
+        }
+    }
+    await Promise.all(Array.from({ length: Math.min(CONCURRENCY, Math.max(1, todo.length)) }, worker));
+    if (firstError) throw firstError;
+}
+
+/* ============================================================
+ * Run
+ * ============================================================ */
+async function doRun() {
+    if (running) return;
+    const errBox = document.getElementById('runError');
+    errBox.classList.add('hidden');
+
+    if (!state.apiKey.trim()) { showRunError('Enter your AI Studio API key first.'); return; }
+    const items = state.items.filter(i => i.text.trim() !== '');
+    if (items.length < 2) { showRunError('Add at least two non-empty items to compare.'); return; }
+
+    const bEnabled = state.profiles.B.enabled;
+    const snapshot = items.map(it => ({
+        id: it.id, role: it.role, title: it.title, text: it.text,
+        prompts: bEnabled
+            ? { A: effectivePrompt(it, 'A'), B: effectivePrompt(it, 'B') }
+            : { A: effectivePrompt(it, 'A') },
+    }));
+    const prompts = snapshot.flatMap(s => Object.values(s.prompts));
+
+    running = true;
+    setRunStatus('Preparing…');
+    document.getElementById('runBtn').disabled = true;
+    try {
+        await embedAll(prompts, (done, total, cached) => {
+            setRunStatus(`Embedding ${done}/${total}${cached ? ` (${cached} from cache)` : ''}…`);
+        });
+        run = { model: state.model, bEnabled, items: snapshot };
+        state.ui.rankedQueryId = snapshot.find(s => s.role === 'query')?.id ?? null;
+        if (!bEnabled && state.ui.heatProfile !== 'A') state.ui.heatProfile = 'A';
+        setRunStatus(`Done — ${snapshot.length} items × ${bEnabled ? 2 : 1} profile(s), model ${state.model}.`);
+        setStale(false);
+        renderResults();
+        saveSoon();
+    } catch (e) {
+        setRunStatus('');
+        showRunError('Embedding failed: ' + e.message);
+    } finally {
+        running = false;
+        document.getElementById('runBtn').disabled = false;
+    }
+}
+function setRunStatus(msg) { document.getElementById('runStatus').textContent = msg; }
+function showRunError(msg) {
+    const el = document.getElementById('runError');
+    el.textContent = msg; el.classList.remove('hidden');
+}
+function setStale(isStale) {
+    document.getElementById('staleBadge').classList.toggle('hidden', !isStale || !run);
+}
+function markDirty() { setStale(true); saveSoon(); }
+
+function getVec(prompt) { return vecCache.get(`${run.model} ${prompt}`) || null; }
+function simOf(a, b, profile) {
+    const va = getVec(a.prompts[profile]), vb = getVec(b.prompts[profile]);
+    return (va && vb) ? cosine(va, vb) : NaN;
+}
+
+/* ============================================================
+ * Rendering: instruction profiles
+ * ============================================================ */
+function presetChips(profile, field) {
+    const roleKey = field === 'query' ? 'query' : 'doc';
+    return PRESETS.filter(p => p.role === roleKey || p.role === 'both')
+        .map(p => `<button type="button" class="preset-chip text-xs bg-slate-100 hover:bg-blue-50 hover:text-blue-700 border border-slate-200 rounded-full px-2.5 py-1"
+                     data-profile="${profile}" data-field="${field}" data-tpl="${esc(p.tpl)}">${esc(p.label)}</button>`)
+        .join(' ');
+}
+
+function templateBlock(profile, field, label) {
+    const val = state.profiles[profile][field];
+    const sampleItem = state.items.find(i => (field === 'query' ? i.role === 'query' : i.role === 'doc') && i.text.trim());
+    const preview = sampleItem ? snippet(buildPrompt(val, sampleItem), 140) : null;
+    return `
+      <div>
+        <label class="block text-xs font-medium text-slate-500 mb-1">${label}</label>
+        <textarea data-profile="${profile}" data-field="${field}" rows="2"
+          class="tpl-input w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500">${esc(val)}</textarea>
+        <div class="flex flex-wrap gap-1.5 mt-1.5">${presetChips(profile, field)}</div>
+        ${preview ? `<p class="text-xs text-slate-400 mt-1.5"><i class="fa-solid fa-eye mr-1"></i>Sends: <span class="font-mono">${esc(preview)}</span></p>` : ''}
+      </div>`;
+}
+
+function renderProfiles() {
+    const wrap = document.getElementById('profilesWrap');
+    const bOn = state.profiles.B.enabled;
+    document.getElementById('enableB').checked = bOn;
+    wrap.className = 'grid gap-4 ' + (bOn ? 'lg:grid-cols-2' : 'md:grid-cols-1');
+    const card = (profile, accent, note) => `
+      <div class="border rounded-xl p-3 ${accent}">
+        <div class="text-sm font-semibold text-slate-700 mb-2">Profile ${profile} ${note}</div>
+        <div class="space-y-3">
+            ${templateBlock(profile, 'query', 'Query instruction template')}
+            ${templateBlock(profile, 'doc', 'Document instruction template')}
+        </div>
+      </div>`;
+    wrap.innerHTML = card('A', 'border-blue-200 bg-blue-50/30', '<span class="text-xs font-normal text-slate-400">— primary; per-item overrides apply here</span>')
+        + (bOn ? card('B', 'border-emerald-200 bg-emerald-50/30', '<span class="text-xs font-normal text-slate-400">— comparison profile (templates only)</span>') : '');
+}
+
+/* ============================================================
+ * Rendering: items
+ * ============================================================ */
+function itemCard(it) {
+    const ov = it.override;
+    return `
+    <div class="border border-slate-200 rounded-xl p-3 bg-slate-50/50" data-item="${it.id}">
+        <div class="flex items-center gap-2 mb-2">
+            <span class="text-xs font-semibold ${it.role === 'query' ? 'text-blue-700 bg-blue-100' : 'text-slate-600 bg-slate-200'} rounded px-1.5 py-0.5">${it.role === 'query' ? 'Q' : 'D'}</span>
+            <input type="text" value="${esc(it.title)}" placeholder="Title" data-item-field="title"
+                class="item-input flex-1 border border-slate-300 rounded-lg px-2 py-1 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+            <button class="del-item text-slate-400 hover:text-red-600 px-1.5" title="Delete item"><i class="fa-solid fa-trash-can"></i></button>
+        </div>
+        <textarea rows="3" placeholder="${it.role === 'query' ? 'Query text…' : 'Markdown document…'}" data-item-field="text"
+            class="item-input w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">${esc(it.text)}</textarea>
+        <details ${ov.enabled ? 'open' : ''} class="mt-1.5">
+            <summary class="text-xs text-slate-500 hover:text-slate-700 inline-flex items-center gap-1.5">
+                <i class="fa-solid fa-chevron-right chevron text-[10px]"></i>
+                Instruction override (profile A)
+                ${ov.enabled ? '<span class="text-blue-700 bg-blue-100 rounded px-1.5 py-0.5 font-medium">on</span>' : ''}
+            </summary>
+            <div class="mt-2 pl-1">
+                <label class="inline-flex items-center gap-2 text-xs text-slate-600 cursor-pointer mb-1.5">
+                    <input type="checkbox" ${ov.enabled ? 'checked' : ''} data-item-field="override-enabled" class="item-input accent-blue-600">
+                    Use a custom instruction for this item
+                </label>
+                <textarea rows="2" placeholder="e.g. task: fact checking | query: {text}" data-item-field="override-template" ${ov.enabled ? '' : 'disabled'}
+                    class="item-input w-full border border-slate-300 rounded-lg px-3 py-1.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:bg-slate-100 disabled:text-slate-400">${esc(ov.template)}</textarea>
+            </div>
+        </details>
+    </div>`;
+}
+
+function renderItems() {
+    const qs = state.items.filter(i => i.role === 'query');
+    const ds = state.items.filter(i => i.role === 'doc');
+    document.getElementById('queryList').innerHTML = qs.map(itemCard).join('') ||
+        '<p class="text-sm text-slate-400 italic">No queries yet.</p>';
+    document.getElementById('docList').innerHTML = ds.map(itemCard).join('') ||
+        '<p class="text-sm text-slate-400 italic">No documents yet.</p>';
+    document.getElementById('queryCount').textContent = `(${qs.length})`;
+    document.getElementById('docCount').textContent = `(${ds.length})`;
+}
+
+function addItem(role, title = '', text = '') {
+    state.items.push({ id: newId(), role, title, text, override: { enabled: false, template: '' } });
+    renderItems(); renderProfiles(); markDirty();
+}
+
+async function importFiles(fileList) {
+    for (const f of fileList) {
+        if (!/\.(md|markdown|txt)$/i.test(f.name)) continue;
+        const text = await f.text();
+        const heading = text.match(/^#\s+(.+)$/m);
+        const title = heading ? heading[1].trim() : f.name.replace(/\.(md|markdown|txt)$/i, '');
+        state.items.push({ id: newId(), role: 'doc', title, text, override: { enabled: false, template: '' } });
+    }
+    renderItems(); renderProfiles(); markDirty();
+}
+
+/* ============================================================
+ * Rendering: results
+ * ============================================================ */
+function renderResults() {
+    // Tab chrome
+    document.querySelectorAll('.tab-btn').forEach(b => {
+        const active = b.dataset.tab === state.ui.tab;
+        b.className = 'tab-btn px-3 py-2 text-sm font-medium rounded-t-lg border-b-2 ' +
+            (active ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-700');
+        if (b.dataset.tab === 'ab') b.classList.toggle('hidden', !(run?.bEnabled ?? state.profiles.B.enabled));
+    });
+    const body = document.getElementById('resultsBody');
+    if (!run) {
+        body.innerHTML = '<p class="text-sm text-slate-400 italic py-6 text-center">Press <strong>Embed &amp; Compare</strong> to generate embeddings and see results here.</p>';
+        return;
+    }
+    switch (state.ui.tab) {
+        case 'heatmap': body.innerHTML = heatmapView(); break;
+        case 'ranked':  body.innerHTML = rankedView();  break;
+        case 'ab':      body.innerHTML = abView();      break;
+        case 'export':  body.innerHTML = exportView();  break;
+    }
+}
+
+function heatAxes() {
+    const qs = run.items.filter(i => i.role === 'query');
+    const ds = run.items.filter(i => i.role === 'doc');
+    if (state.ui.scope === 'qd' && qs.length && ds.length) return { rows: qs, cols: ds, symmetric: false };
+    return { rows: run.items, cols: run.items, symmetric: true };
+}
+
+function scopeControls() {
+    const opt = (val, label) => `
+        <button data-scope="${val}" class="scope-btn px-3 py-1.5 text-xs font-medium rounded-lg border
+            ${state.ui.scope === val ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'}">${label}</button>`;
+    return `<div class="inline-flex gap-1.5">${opt('qd', 'Queries × Documents')}${opt('all', 'All × All')}</div>`;
+}
+function profileControls() {
+    if (!run.bEnabled) return '';
+    const opt = (val, label) => `
+        <button data-heatprofile="${val}" class="heatprofile-btn px-3 py-1.5 text-xs font-medium rounded-lg border
+            ${state.ui.heatProfile === val ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'}">${label}</button>`;
+    return `<div class="inline-flex gap-1.5">${opt('A', 'Profile A')}${opt('B', 'Profile B')}${opt('D', 'Δ (B − A)')}</div>`;
+}
+
+function heatmapView() {
+    const { rows, cols, symmetric } = heatAxes();
+    const mode = run.bEnabled ? state.ui.heatProfile : 'A';
+    const isDelta = mode === 'D';
+
+    const vals = [];
+    const matrix = rows.map(r => cols.map(c => {
+        if (symmetric && r.id === c.id) return null;
+        const v = isDelta ? simOf(r, c, 'B') - simOf(r, c, 'A') : simOf(r, c, mode);
+        if (Number.isFinite(v)) vals.push(v);
+        return v;
+    }));
+    let min = Math.min(...vals), max = Math.max(...vals);
+    if (!vals.length) { min = 0; max = 1; }
+    const maxAbs = Math.max(Math.abs(min), Math.abs(max), 1e-9);
+
+    const cellColor = v => isDelta ? divColor(v, maxAbs) : seqColor(v, min, max);
+    const label = (it) => esc(it.title || snippet(it.text, 24));
+
+    const headerRow = `<tr><th class="sticky left-0 bg-white z-10"></th>${cols.map((c, j) =>
+        `<th class="px-1 pb-2 align-bottom"><div class="text-[11px] font-medium text-slate-500 max-w-[7rem] truncate mx-auto" title="${label(c)}">${(symmetric ? (c.role === 'query' ? 'Q · ' : 'D · ') : '') + label(c)}</div></th>`).join('')}</tr>`;
+
+    const bodyRows = rows.map((r, i) => `<tr>
+        <th class="sticky left-0 bg-white z-10 pr-2 text-right"><div class="text-[11px] font-medium text-slate-500 max-w-[9rem] truncate ml-auto" title="${label(r)}">${(symmetric ? (r.role === 'query' ? 'Q · ' : 'D · ') : '') + label(r)}</div></th>
+        ${cols.map((c, j) => {
+            const v = matrix[i][j];
+            if (v === null) return `<td class="p-[1px]"><div class="heat-cell rounded w-16 h-10 flex items-center justify-center text-[11px]" style="background:#f0efec;color:#898781">—</div></td>`;
+            const bg = cellColor(v);
+            return `<td class="p-[1px]"><div class="heat-cell rounded w-16 h-10 flex items-center justify-center text-[11px] font-medium mono-num cursor-default"
+                style="background:${bg};color:${inkFor(bg)}"
+                data-tip="${esc(`${r.title || 'row'} × ${c.title || 'col'}\n${isDelta ? 'Δ (B−A)' : 'cosine'}: ${fmt(v, 4)}`)}">${isDelta && v > 0 ? '+' : ''}${fmt(v)}</div></td>`;
+        }).join('')}
+    </tr>`).join('');
+
+    const legendGrad = isDelta
+        ? `linear-gradient(to right, ${DIV_NEG[DIV_NEG.length-1]}, ${DIV_NEG[0]}, ${DIV_POS[DIV_POS.length-1]})`
+        : `linear-gradient(to right, ${SEQ_RAMP[0]}, ${SEQ_RAMP[SEQ_RAMP.length-1]})`;
+    const legend = `
+        <div class="flex items-center gap-2 text-[11px] text-slate-500 mono-num">
+            <span>${isDelta ? '−' + fmt(maxAbs) : fmt(min)}</span>
+            <div class="h-2.5 w-32 rounded-full" style="background:${legendGrad}"></div>
+            <span>${isDelta ? '+' + fmt(maxAbs) : fmt(max)}</span>
+            <span class="ml-1 text-slate-400">${isDelta ? 'similarity shift, B − A' : 'cosine similarity'}</span>
+        </div>`;
+
+    return `
+        <div class="flex flex-wrap items-center gap-3 mb-4">${scopeControls()}${profileControls()}${legend}</div>
+        <div class="overflow-x-auto pb-2"><table class="border-separate border-spacing-0">${headerRow}${bodyRows}</table></div>
+        <p class="text-xs text-slate-400 mt-2">Color scale spans this matrix's observed range${symmetric ? '; the self-similarity diagonal is omitted' : ''}. Hover a cell for details.</p>`;
+}
+
+function rankedView() {
+    const qs = run.items.filter(i => i.role === 'query');
+    const ds = run.items.filter(i => i.role === 'doc');
+    if (!qs.length || !ds.length) return '<p class="text-sm text-slate-400 italic py-6 text-center">Ranked retrieval needs at least one query and one document.</p>';
+
+    if (!qs.some(q => q.id === state.ui.rankedQueryId)) state.ui.rankedQueryId = qs[0].id;
+    const q = qs.find(x => x.id === state.ui.rankedQueryId);
+
+    const chips = qs.map(x => `
+        <button data-rankquery="${x.id}" class="rankquery-btn px-3 py-1.5 text-xs font-medium rounded-lg border max-w-[16rem] truncate
+            ${x.id === q.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'}"
+            title="${esc(x.text)}">${esc(x.title || snippet(x.text, 30))}</button>`).join('');
+
+    const scored = ds.map(d => ({ d, a: simOf(q, d, 'A'), b: run.bEnabled ? simOf(q, d, 'B') : NaN }));
+    const byA = [...scored].sort((x, y) => y.a - x.a);
+    const rankB = new Map(run.bEnabled ? [...scored].sort((x, y) => y.b - x.b).map((s, i) => [s.d.id, i]) : []);
+    const lo = Math.min(...scored.flatMap(s => run.bEnabled ? [s.a, s.b] : [s.a]).filter(Number.isFinite), 0);
+    const scale = v => Math.max(2, ((v - Math.min(lo, 0)) / (1 - Math.min(lo, 0))) * 100);
+
+    const bar = (v, color) => `
+        <div class="flex items-center gap-2">
+            <div class="flex-1 h-3 rounded-full bg-slate-100 overflow-hidden"><div class="h-full rounded-r" style="width:${scale(v)}%;background:${color}"></div></div>
+            <span class="mono-num text-xs w-14 text-right" style="color:var(--text-secondary)">${fmt(v, 4)}</span>
+        </div>`;
+
+    const rows = byA.map((s, i) => {
+        const shift = run.bEnabled ? (rankB.get(s.d.id) - i) : 0;
+        const shiftBadge = !run.bEnabled ? '' :
+            shift === 0 ? '<span class="text-[10px] text-slate-400">B: same rank</span>' :
+            `<span class="text-[10px] ${shift < 0 ? 'text-emerald-700' : 'text-red-600'}">B: ${shift < 0 ? '▲' : '▼'} ${Math.abs(shift)} → #${rankB.get(s.d.id) + 1}</span>`;
+        return `
+        <div class="border border-slate-200 rounded-xl p-3" data-tip="${esc(snippet(s.d.text, 220))}">
+            <div class="flex items-baseline justify-between gap-2 mb-1.5">
+                <div class="text-sm font-medium text-slate-700 truncate"><span class="text-slate-400 mono-num mr-1.5">#${i + 1}</span>${esc(s.d.title || snippet(s.d.text, 40))}</div>
+                ${shiftBadge}
+            </div>
+            ${bar(s.a, 'var(--series-1)')}
+            ${run.bEnabled ? bar(s.b, 'var(--series-2)') : ''}
+        </div>`;
+    }).join('');
+
+    const legend = run.bEnabled ? `
+        <div class="flex items-center gap-4 text-xs text-slate-500">
+            <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm inline-block" style="background:var(--series-1)"></span>Profile A</span>
+            <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm inline-block" style="background:var(--series-2)"></span>Profile B</span>
+        </div>` : '';
+
+    return `
+        <div class="flex flex-wrap items-center gap-2 mb-1"><span class="text-xs font-medium text-slate-500 mr-1">Query:</span>${chips}</div>
+        <p class="text-xs text-slate-400 mb-3 font-mono">${esc(snippet(q.text, 160))}</p>
+        <div class="flex items-center justify-between mb-3"><span class="text-xs text-slate-400">Documents ranked by profile A cosine similarity.</span>${legend}</div>
+        <div class="grid gap-2 md:grid-cols-2">${rows}</div>`;
+}
+
+function abView() {
+    if (!run.bEnabled) return '<p class="text-sm text-slate-400 italic py-6 text-center">Enable profile B and re-run to compare instructions.</p>';
+    const qs = run.items.filter(i => i.role === 'query');
+    const ds = run.items.filter(i => i.role === 'doc');
+    const pairs = [];
+    for (const q of qs) for (const d of ds) {
+        const a = simOf(q, d, 'A'), b = simOf(q, d, 'B');
+        pairs.push({ q, d, a, b, delta: b - a });
+    }
+    if (!pairs.length) return '<p class="text-sm text-slate-400 italic py-6 text-center">A/B shifts need at least one query and one document.</p>';
+    pairs.sort((x, y) => Math.abs(y.delta) - Math.abs(x.delta));
+    const maxAbs = Math.max(...pairs.map(p => Math.abs(p.delta)), 1e-9);
+
+    const rows = pairs.map(p => {
+        const w = Math.abs(p.delta) / maxAbs * 50;
+        const pos = p.delta >= 0;
+        return `<tr class="border-t border-slate-100 hover:bg-slate-50">
+            <td class="px-3 py-2 text-sm text-slate-700 max-w-[14rem] truncate" title="${esc(p.q.text)}">${esc(p.q.title || snippet(p.q.text, 30))}</td>
+            <td class="px-3 py-2 text-sm text-slate-700 max-w-[14rem] truncate" title="${esc(snippet(p.d.text, 200))}">${esc(p.d.title || snippet(p.d.text, 30))}</td>
+            <td class="px-3 py-2 mono-num text-sm text-right" style="color:var(--text-secondary)">${fmt(p.a, 4)}</td>
+            <td class="px-3 py-2 mono-num text-sm text-right" style="color:var(--text-secondary)">${fmt(p.b, 4)}</td>
+            <td class="px-3 py-2 mono-num text-sm text-right font-medium" style="color:${pos ? '#b93a39' : '#1c5cab'}">${pos ? '+' : ''}${fmt(p.delta, 4)}</td>
+            <td class="px-2 py-2 w-40">
+                <div class="relative h-3 w-full">
+                    <div class="absolute inset-y-0 left-1/2 w-px bg-slate-300"></div>
+                    <div class="absolute inset-y-0 rounded" style="${pos ? `left:50%;` : `right:50%;`}width:${w}%;background:${pos ? '#e34948' : '#2a78d6'}"></div>
+                </div>
+            </td>
+        </tr>`;
+    }).join('');
+
+    return `
+        <div class="flex items-center gap-4 text-xs text-slate-500 mb-3">
+            <span>Every query × document pair, sorted by the size of the similarity shift when switching from profile A to profile B.</span>
+            <span class="inline-flex items-center gap-1.5 shrink-0"><span class="w-3 h-3 rounded-sm inline-block" style="background:#2a78d6"></span>B lower</span>
+            <span class="inline-flex items-center gap-1.5 shrink-0"><span class="w-3 h-3 rounded-sm inline-block" style="background:#e34948"></span>B higher</span>
+        </div>
+        <div class="overflow-x-auto">
+        <table class="w-full text-left">
+            <thead><tr class="text-xs text-slate-400">
+                <th class="px-3 py-1.5 font-medium">Query</th><th class="px-3 py-1.5 font-medium">Document</th>
+                <th class="px-3 py-1.5 font-medium text-right">Sim A</th><th class="px-3 py-1.5 font-medium text-right">Sim B</th>
+                <th class="px-3 py-1.5 font-medium text-right">Δ (B−A)</th><th class="px-2 py-1.5"></th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+        </table></div>`;
+}
+
+function exportView() {
+    const bOn = run.bEnabled;
+    return `
+        <div class="space-y-4 max-w-2xl">
+            <div>
+                <h3 class="text-sm font-semibold text-slate-700 mb-1">Similarity matrix (CSV)</h3>
+                <p class="text-xs text-slate-400 mb-2">Rows/columns labeled by item titles, cells are cosine similarities, using the current heatmap scope (${state.ui.scope === 'qd' ? 'Queries × Documents' : 'All × All'}).</p>
+                <div class="flex gap-2 flex-wrap">
+                    <button class="export-btn bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-sm px-3 py-1.5 rounded-lg" data-export="csvA"><i class="fa-solid fa-file-csv mr-1.5"></i>Profile A CSV</button>
+                    ${bOn ? '<button class="export-btn bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-sm px-3 py-1.5 rounded-lg" data-export="csvB"><i class="fa-solid fa-file-csv mr-1.5"></i>Profile B CSV</button>' : ''}
+                    ${bOn ? '<button class="export-btn bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-sm px-3 py-1.5 rounded-lg" data-export="csvD"><i class="fa-solid fa-file-csv mr-1.5"></i>Δ (B−A) CSV</button>' : ''}
+                </div>
+            </div>
+            <div>
+                <h3 class="text-sm font-semibold text-slate-700 mb-1">Full workspace (JSON)</h3>
+                <p class="text-xs text-slate-400 mb-2">Texts, instruction templates, effective prompts, raw embedding vectors, and all pairwise similarities. Can be several MB.</p>
+                <button class="export-btn bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-sm px-3 py-1.5 rounded-lg" data-export="json"><i class="fa-solid fa-file-code mr-1.5"></i>Download JSON</button>
+            </div>
+        </div>`;
+}
+
+function exportCsv(mode) {
+    const { rows, cols, symmetric } = heatAxes();
+    const label = it => it.title || snippet(it.text, 40);
+    const header = [''].concat(cols.map(c => csvCell(label(c)))).join(',');
+    const lines = rows.map(r => [csvCell(label(r))].concat(cols.map(c => {
+        if (symmetric && r.id === c.id) return '';
+        const v = mode === 'D' ? simOf(r, c, 'B') - simOf(r, c, 'A') : simOf(r, c, mode);
+        return Number.isFinite(v) ? v.toFixed(6) : '';
+    })).join(','));
+    const name = `similarity-${mode === 'D' ? 'delta-B-minus-A' : 'profile-' + mode}-${state.ui.scope}.csv`;
+    download(name, [header, ...lines].join('\n'), 'text/csv');
+}
+
+function exportJson() {
+    const items = run.items.map(it => ({
+        id: it.id, role: it.role, title: it.title, text: it.text,
+        prompts: it.prompts,
+        embeddings: Object.fromEntries(Object.entries(it.prompts).map(([p, prompt]) => [p, getVec(prompt)])),
+    }));
+    const sims = [];
+    for (const a of run.items) for (const b of run.items) {
+        if (a.id >= b.id) continue;
+        const entry = { a: a.id, b: b.id, simA: simOf(a, b, 'A') };
+        if (run.bEnabled) entry.simB = simOf(a, b, 'B');
+        sims.push(entry);
+    }
+    download('gemini-embedding-workspace.json', JSON.stringify({
+        exportedAt: new Date().toISOString(),
+        model: run.model,
+        profiles: state.profiles,
+        items, similarities: sims,
+    }, null, 2), 'application/json');
+}
+
+/* ============================================================
+ * Tooltip
+ * ============================================================ */
+const tooltip = document.getElementById('tooltip');
+document.addEventListener('mousemove', e => {
+    const t = e.target.closest('[data-tip]');
+    if (!t) { tooltip.style.display = 'none'; return; }
+    tooltip.textContent = t.dataset.tip;
+    tooltip.style.whiteSpace = 'pre-line';
+    tooltip.style.display = 'block';
+    const pad = 14;
+    let x = e.clientX + pad, y = e.clientY + pad;
+    const r = tooltip.getBoundingClientRect();
+    if (x + r.width > window.innerWidth - 8) x = e.clientX - r.width - pad;
+    if (y + r.height > window.innerHeight - 8) y = e.clientY - r.height - pad;
+    tooltip.style.left = x + 'px';
+    tooltip.style.top = y + 'px';
+});
+
+/* ============================================================
+ * Event wiring
+ * ============================================================ */
+function wire() {
+    const apiKeyEl = document.getElementById('apiKey');
+    const modelEl = document.getElementById('modelName');
+    apiKeyEl.value = state.apiKey;
+    modelEl.value = state.model;
+    apiKeyEl.addEventListener('input', () => { state.apiKey = apiKeyEl.value.trim(); saveSoon(); });
+    modelEl.addEventListener('input', () => { state.model = modelEl.value.trim(); markDirty(); });
+    document.getElementById('toggleKey').addEventListener('click', () => {
+        apiKeyEl.type = apiKeyEl.type === 'password' ? 'text' : 'password';
+    });
+
+    document.getElementById('enableB').addEventListener('change', e => {
+        state.profiles.B.enabled = e.target.checked;
+        renderProfiles(); renderResults(); markDirty();
+    });
+
+    // Template edits + preset chips (delegated; profiles panel re-renders on structure change only)
+    document.getElementById('profilesWrap').addEventListener('input', e => {
+        const el = e.target.closest('.tpl-input');
+        if (!el) return;
+        state.profiles[el.dataset.profile][el.dataset.field] = el.value;
+        markDirty();
+    });
+    document.getElementById('profilesWrap').addEventListener('click', e => {
+        const chip = e.target.closest('.preset-chip');
+        if (!chip) return;
+        state.profiles[chip.dataset.profile][chip.dataset.field] = chip.dataset.tpl;
+        renderProfiles(); markDirty();
+    });
+
+    // Item add buttons
+    document.querySelectorAll('.add-item-btn').forEach(b =>
+        b.addEventListener('click', () => addItem(b.dataset.addRole)));
+
+    // Item edits/deletes (delegated on both lists)
+    for (const listId of ['queryList', 'docList']) {
+        const list = document.getElementById(listId);
+        list.addEventListener('input', e => {
+            const card = e.target.closest('[data-item]');
+            if (!card) return;
+            const it = state.items.find(i => i.id === card.dataset.item);
+            if (!it) return;
+            const field = e.target.dataset.itemField;
+            if (field === 'title') it.title = e.target.value;
+            else if (field === 'text') it.text = e.target.value;
+            else if (field === 'override-template') it.override.template = e.target.value;
+            markDirty();
+        });
+        list.addEventListener('change', e => {
+            if (e.target.dataset.itemField !== 'override-enabled') return;
+            const card = e.target.closest('[data-item]');
+            const it = state.items.find(i => i.id === card.dataset.item);
+            if (!it) return;
+            it.override.enabled = e.target.checked;
+            renderItems(); markDirty();
+        });
+        list.addEventListener('click', e => {
+            const del = e.target.closest('.del-item');
+            if (!del) return;
+            const card = del.closest('[data-item]');
+            state.items = state.items.filter(i => i.id !== card.dataset.item);
+            renderItems(); renderProfiles(); markDirty();
+        });
+    }
+
+    // File upload + drag & drop for documents
+    document.getElementById('uploadDocsBtn').addEventListener('click', () =>
+        document.getElementById('docFileInput').click());
+    document.getElementById('docFileInput').addEventListener('change', e => {
+        importFiles([...e.target.files]); e.target.value = '';
+    });
+    const zone = document.getElementById('docDropZone');
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+    zone.addEventListener('drop', e => {
+        e.preventDefault(); zone.classList.remove('drag-over');
+        if (e.dataTransfer?.files?.length) importFiles([...e.dataTransfer.files]);
+    });
+
+    document.getElementById('runBtn').addEventListener('click', doRun);
+
+    document.getElementById('tabBar').addEventListener('click', e => {
+        const b = e.target.closest('.tab-btn');
+        if (!b) return;
+        state.ui.tab = b.dataset.tab;
+        renderResults(); saveSoon();
+    });
+
+    // Results-body controls (scope / profile / ranked query / export)
+    document.getElementById('resultsBody').addEventListener('click', e => {
+        const scope = e.target.closest('.scope-btn');
+        if (scope) { state.ui.scope = scope.dataset.scope; renderResults(); saveSoon(); return; }
+        const hp = e.target.closest('.heatprofile-btn');
+        if (hp) { state.ui.heatProfile = hp.dataset.heatprofile; renderResults(); saveSoon(); return; }
+        const rq = e.target.closest('.rankquery-btn');
+        if (rq) { state.ui.rankedQueryId = rq.dataset.rankquery; renderResults(); saveSoon(); return; }
+        const ex = e.target.closest('.export-btn');
+        if (ex) {
+            const m = ex.dataset.export;
+            if (m === 'json') exportJson();
+            else exportCsv(m === 'csvA' ? 'A' : m === 'csvB' ? 'B' : 'D');
+        }
+    });
+}
+
+/* ============================================================
+ * Boot
+ * ============================================================ */
+loadState();
+wire();
+window.addEventListener('pagehide', saveState); // flush the debounced save on close/reload
+renderProfiles();
+renderItems();
+renderResults();
+})();
+</script>
+</body>
+</html>
