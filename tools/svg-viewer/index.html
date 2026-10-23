@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>SVG Viewer</title>
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <style>
+        :root {
+            --bg: #0b0d10;
+            --fg: #e5e7eb;
+            --muted: #6b7280;
+            --chip: rgba(20, 23, 28, 0.72);
+            --chip-border: rgba(255, 255, 255, 0.08);
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body {
+            margin: 0;
+            height: 100%;
+            overflow: hidden;
+            background: var(--bg);
+            color: var(--fg);
+            font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body.checker {
+            background-color: #fff;
+            background-image:
+                linear-gradient(45deg, #e5e7eb 25%, transparent 25%, transparent 75%, #e5e7eb 75%),
+                linear-gradient(45deg, #e5e7eb 25%, transparent 25%, transparent 75%, #e5e7eb 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 10px;
+        }
+
+        body.light { background: #fff; }
+
+        #stage {
+            position: fixed;
+            inset: 0;
+            touch-action: none;
+            cursor: pointer;
+        }
+
+        body.loaded #stage { cursor: grab; }
+        body.loaded #stage.dragging { cursor: grabbing; }
+
+        #art {
+            position: absolute;
+            left: 0;
+            top: 0;
+            transform-origin: 0 0;
+            pointer-events: none;
+            display: none;
+            max-width: none;
+        }
+
+        body.loaded #art { display: block; }
+
+        #empty {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            pointer-events: none;
+            color: var(--muted);
+            text-align: center;
+            padding: 24px;
+        }
+
+        #empty .ring {
+            width: 88px;
+            height: 88px;
+            border: 1.5px dashed currentColor;
+            border-radius: 22px;
+            display: grid;
+            place-items: center;
+            transition: transform .15s ease, color .15s ease;
+        }
+
+        #empty .title { color: var(--fg); font-size: 17px; font-weight: 500; }
+        #empty .hint { font-size: 13px; }
+
+        body.loaded #empty { display: none; }
+        body.dragover #empty { display: flex; color: #60a5fa; }
+        body.dragover #empty .ring { transform: scale(1.08); }
+        body.dragover.loaded #empty { background: rgba(11, 13, 16, 0.6); }
+
+        .bar {
+            position: fixed;
+            display: flex;
+            gap: 4px;
+            padding: 4px;
+            background: var(--chip);
+            border: 1px solid var(--chip-border);
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            transition: opacity .25s ease;
+            z-index: 2;
+        }
+
+        #top-left { top: max(12px, env(safe-area-inset-top)); left: max(12px, env(safe-area-inset-left)); }
+        #top-right { top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); }
+
+        body.idle .bar { opacity: 0; pointer-events: none; }
+        body:not(.loaded) .needs-art { display: none; }
+
+        .bar a, .bar button {
+            all: unset;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            height: 32px;
+            min-width: 32px;
+            padding: 0 8px;
+            justify-content: center;
+            border-radius: 8px;
+            color: var(--fg);
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .bar a:hover, .bar button:hover { background: rgba(255, 255, 255, 0.08); }
+        .bar a:focus-visible, .bar button:focus-visible { outline: 2px solid #60a5fa; }
+        .bar svg { width: 16px; height: 16px; flex: none; }
+
+        #readout {
+            font-variant-numeric: tabular-nums;
+            color: var(--muted);
+            font-size: 12px;
+            padding: 0 6px;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        #name {
+            max-width: 32vw;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: var(--muted);
+            font-size: 12px;
+            padding: 0 6px;
+            align-self: center;
+        }
+
+        #toast {
+            position: fixed;
+            left: 50%;
+            bottom: max(20px, env(safe-area-inset-bottom));
+            transform: translateX(-50%);
+            background: #7f1d1d;
+            color: #fee2e2;
+            padding: 8px 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            opacity: 0;
+            transition: opacity .2s ease;
+            pointer-events: none;
+            z-index: 3;
+        }
+
+        #toast.show { opacity: 1; }
+
+        @media (max-width: 520px) {
+            #name, .label { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div id="stage">
+        <img id="art" alt="" draggable="false">
+    </div>
+
+    <div id="empty">
+        <div class="ring">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="m6 10 6-6 6 6"/><path d="M4 20h16"/></svg>
+        </div>
+        <div class="title">Tap anywhere to open an SVG</div>
+        <div class="hint">or drop / paste one here</div>
+    </div>
+
+    <div class="bar" id="top-left">
+        <a href="../../" title="Back to Tools">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+            <span class="label">Back to Tools</span>
+        </a>
+        <span id="name" class="needs-art"></span>
+    </div>
+
+    <div class="bar" id="top-right">
+        <span id="readout" class="needs-art"></span>
+        <button id="btn-open" class="needs-art" title="Open SVG (O)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="m6 10 6-6 6 6"/><path d="M4 20h16"/></svg>
+        </button>
+        <button id="btn-fit" class="needs-art" title="Fit to screen (0 / double-tap)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+        </button>
+        <button id="btn-bg" title="Background (B)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 12h18"/><path d="M12 3v18"/></svg>
+        </button>
+        <button id="btn-fs" title="Fullscreen (F)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
+        </button>
+    </div>
+
+    <div id="toast"></div>
+
+    <input type="file" id="file" accept=".svg,image/svg+xml" hidden>
+
+    <script>
+        (() => {
+            const body = document.body;
+            const stage = document.getElementById('stage');
+            const art = document.getElementById('art');
+            const fileInput = document.getElementById('file');
+            const readout = document.getElementById('readout');
+            const nameEl = document.getElementById('name');
+            const toast = document.getElementById('toast');
+
+            const MIN_SCALE = 0.01;
+            const MAX_SCALE = 500;
+            const BACKGROUNDS = ['', 'checker', 'light'];
+
+            // View transform: screen = T + R(r) * s * local
+            const view = { tx: 0, ty: 0, s: 1, r: 0 };
+            let natural = { w: 0, h: 0 };
+            let objectUrl = null;
+            let bgIndex = 0;
+            let rafPending = false;
+
+            // ---------- Rendering ----------
+
+            function render() {
+                rafPending = false;
+                art.style.transform =
+                    `translate(${view.tx}px, ${view.ty}px) rotate(${view.r}rad) scale(${view.s})`;
+                let deg = ((view.r * 180 / Math.PI) % 360 + 360) % 360;
+                if (deg > 359.5) deg = 0;
+                readout.textContent = `${Math.round(view.s * 100)}%` + (Math.round(deg) ? ` · ${Math.round(deg)}°` : '');
+            }
+
+            function schedule() {
+                if (!rafPending) {
+                    rafPending = true;
+                    requestAnimationFrame(render);
+                }
+            }
+
+            // Scale by k and rotate by d around screen point (cx, cy), then translate by (dx, dy).
+            function transformAround(cx, cy, k, d, dx = 0, dy = 0) {
+                const ns = view.s * k;
+                if (ns < MIN_SCALE || ns > MAX_SCALE) k = 1;
+                const cos = Math.cos(d) * k;
+                const sin = Math.sin(d) * k;
+                const x = view.tx - cx;
+                const y = view.ty - cy;
+                view.tx = cx + dx + x * cos - y * sin;
+                view.ty = cy + dy + x * sin + y * cos;
+                view.s *= k;
+                view.r += d;
+                schedule();
+            }
+
+            function fit() {
+                if (!natural.w) return;
+                const W = window.innerWidth;
+                const H = window.innerHeight;
+                const pad = Math.min(W, H) < 600 ? 0.94 : 0.86;
+                view.s = Math.min(W / natural.w, H / natural.h) * pad;
+                view.r = 0;
+                view.tx = (W - natural.w * view.s) / 2;
+                view.ty = (H - natural.h * view.s) / 2;
+                schedule();
+            }
+
+            // ---------- Loading ----------
+
+            function showError(msg) {
+                toast.textContent = msg;
+                toast.classList.add('show');
+                clearTimeout(showError.t);
+                showError.t = setTimeout(() => toast.classList.remove('show'), 2600);
+            }
+
+            function parseSize(svgText) {
+                const doc = new DOMParser().parseFromString(svgText, 'image/svg+xml');
+                const el = doc.documentElement;
+                if (!el || el.nodeName.toLowerCase() !== 'svg' || doc.getElementsByTagName('parsererror').length) {
+                    return null;
+                }
+                const num = (v) => {
+                    if (!v || /%$/.test(v.trim())) return 0;
+                    const n = parseFloat(v);
+                    return isFinite(n) && n > 0 ? n : 0;
+                };
+                let w = num(el.getAttribute('width'));
+                let h = num(el.getAttribute('height'));
+                const vb = (el.getAttribute('viewBox') || '').trim().split(/[\s,]+/).map(Number);
+                const hasVb = vb.length === 4 && vb[2] > 0 && vb[3] > 0;
+                if (hasVb) {
+                    if (!w && !h) { w = vb[2]; h = vb[3]; }
+                    else if (!w) w = h * vb[2] / vb[3];
+                    else if (!h) h = w * vb[3] / vb[2];
+                }
+                return { w: w || 300, h: h || 150 };
+            }
+
+            function loadText(text, name) {
+                const size = parseSize(text);
+                if (!size) {
+                    showError('That doesn’t look like a valid SVG.');
+                    return;
+                }
+                // Rendering via <img> keeps any embedded scripts from running.
+                const url = URL.createObjectURL(new Blob([text], { type: 'image/svg+xml' }));
+                art.onload = () => {
+                    if (objectUrl) URL.revokeObjectURL(objectUrl);
+                    objectUrl = url;
+                    natural = size;
+                    art.style.width = size.w + 'px';
+                    art.style.height = size.h + 'px';
+                    nameEl.textContent = name || '';
+                    document.title = name ? `${name} · SVG Viewer` : 'SVG Viewer';
+                    body.classList.add('loaded');
+                    fit();
+                };
+                art.onerror = () => {
+                    URL.revokeObjectURL(url);
+                    showError('Could not render that SVG.');
+                };
+                art.src = url;
+            }
+
+            function loadFile(file) {
+                if (!file) return;
+                const isSvg = file.type === 'image/svg+xml' || /\.svgz?$/i.test(file.name);
+                if (!isSvg) {
+                    showError('Please choose an .svg file.');
+                    return;
+                }
+                file.text().then((t) => loadText(t, file.name), () => showError('Could not read file.'));
+            }
+
+            function openPicker() {
+                fileInput.value = '';
+                fileInput.click();
+            }
+
+            fileInput.addEventListener('change', () => loadFile(fileInput.files[0]));
+
+            // ---------- Drag & drop / paste ----------
+
+            let dragDepth = 0;
+            window.addEventListener('dragenter', (e) => {
+                e.preventDefault();
+                dragDepth++;
+                body.classList.add('dragover');
+            });
+            window.addEventListener('dragleave', () => {
+                if (--dragDepth <= 0) {
+                    dragDepth = 0;
+                    body.classList.remove('dragover');
+                }
+            });
+            window.addEventListener('dragover', (e) => e.preventDefault());
+            window.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dragDepth = 0;
+                body.classList.remove('dragover');
+                const dt = e.dataTransfer;
+                if (dt.files && dt.files.length) {
+                    loadFile(dt.files[0]);
+                } else {
+                    const text = dt.getData('text/plain');
+                    if (text && text.includes('<svg')) loadText(text, 'dropped.svg');
+                }
+            });
+
+            window.addEventListener('paste', (e) => {
+                const items = e.clipboardData ? [...e.clipboardData.items] : [];
+                const fileItem = items.find((i) => i.kind === 'file');
+                if (fileItem) {
+                    loadFile(fileItem.getAsFile());
+                    return;
+                }
+                const text = e.clipboardData && e.clipboardData.getData('text/plain');
+                if (text && text.includes('<svg')) loadText(text, 'pasted.svg');
+            });
+
+            // ---------- Gestures ----------
+
+            const pointers = new Map();
+            let moved = false;
+            let downAt = 0;
+            let lastTap = { t: 0, x: 0, y: 0 };
+
+            function pair() {
+                const [a, b] = [...pointers.values()];
+                return {
+                    mx: (a.x + b.x) / 2,
+                    my: (a.y + b.y) / 2,
+                    dist: Math.hypot(b.x - a.x, b.y - a.y),
+                    ang: Math.atan2(b.y - a.y, b.x - a.x),
+                };
+            }
+
+            stage.addEventListener('pointerdown', (e) => {
+                if (e.pointerType === 'mouse' && e.button !== 0) return;
+                stage.setPointerCapture(e.pointerId);
+                pointers.set(e.pointerId, { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY });
+                if (pointers.size === 1) {
+                    moved = false;
+                    downAt = performance.now();
+                } else {
+                    moved = true;
+                }
+                if (body.classList.contains('loaded')) stage.classList.add('dragging');
+            });
+
+            stage.addEventListener('pointermove', (e) => {
+                wake();
+                const p = pointers.get(e.pointerId);
+                if (!p) return;
+                const loaded = body.classList.contains('loaded');
+
+                if (pointers.size >= 2) {
+                    const before = pair();
+                    p.x = e.clientX;
+                    p.y = e.clientY;
+                    const after = pair();
+                    if (loaded && before.dist > 0) {
+                        transformAround(
+                            before.mx, before.my,
+                            after.dist / before.dist,
+                            after.ang - before.ang,
+                            after.mx - before.mx, after.my - before.my
+                        );
+                    }
+                    return;
+                }
+
+                const dx = e.clientX - p.x;
+                const dy = e.clientY - p.y;
+                p.x = e.clientX;
+                p.y = e.clientY;
+                if (Math.hypot(p.x - p.sx, p.y - p.sy) > 6) moved = true;
+                if (loaded && moved) {
+                    view.tx += dx;
+                    view.ty += dy;
+                    schedule();
+                }
+            });
+
+            function endPointer(e) {
+                if (!pointers.has(e.pointerId)) return;
+                const wasSingle = pointers.size === 1;
+                pointers.delete(e.pointerId);
+                if (pointers.size === 0) stage.classList.remove('dragging');
+                if (e.type !== 'pointerup' || !wasSingle || moved) return;
+                if (performance.now() - downAt > 500) return;
+
+                if (!body.classList.contains('loaded')) {
+                    openPicker();
+                    return;
+                }
+                // Double-tap / double-click to fit.
+                const now = performance.now();
+                if (now - lastTap.t < 320 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 30) {
+                    fit();
+                    lastTap.t = 0;
+                } else {
+                    lastTap = { t: now, x: e.clientX, y: e.clientY };
+                }
+            }
+
+            stage.addEventListener('pointerup', endPointer);
+            stage.addEventListener('pointercancel', endPointer);
+
+            // Wheel: zoom (trackpad pinch arrives as ctrl+wheel). Shift/Alt+wheel rotates.
+            stage.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                if (!body.classList.contains('loaded')) return;
+                const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? window.innerHeight : 1;
+                const delta = (e.deltaY || e.deltaX) * unit;
+                if (e.shiftKey || e.altKey) {
+                    transformAround(e.clientX, e.clientY, 1, delta * 0.003);
+                } else {
+                    const rate = e.ctrlKey ? 0.01 : 0.0015;
+                    transformAround(e.clientX, e.clientY, Math.exp(-delta * rate), 0);
+                }
+            }, { passive: false });
+
+            // Safari trackpad gestures.
+            let gestureBase = null;
+            const supportsTouch = 'ontouchstart' in window;
+            if (!supportsTouch) {
+                window.addEventListener('gesturestart', (e) => {
+                    e.preventDefault();
+                    gestureBase = { scale: 1, rotation: 0 };
+                });
+                window.addEventListener('gesturechange', (e) => {
+                    e.preventDefault();
+                    if (!gestureBase || !body.classList.contains('loaded')) return;
+                    transformAround(
+                        e.clientX, e.clientY,
+                        e.scale / gestureBase.scale,
+                        (e.rotation - gestureBase.rotation) * Math.PI / 180
+                    );
+                    gestureBase = { scale: e.scale, rotation: e.rotation };
+                });
+                window.addEventListener('gestureend', (e) => {
+                    e.preventDefault();
+                    gestureBase = null;
+                });
+            } else {
+                // Stop iOS Safari from page-zooming on pinch outside the stage.
+                document.addEventListener('gesturestart', (e) => e.preventDefault());
+            }
+
+            // ---------- Controls ----------
+
+            function cycleBackground() {
+                if (BACKGROUNDS[bgIndex]) body.classList.remove(BACKGROUNDS[bgIndex]);
+                bgIndex = (bgIndex + 1) % BACKGROUNDS.length;
+                if (BACKGROUNDS[bgIndex]) body.classList.add(BACKGROUNDS[bgIndex]);
+            }
+
+            function toggleFullscreen() {
+                const el = document.documentElement;
+                const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+                if (fsEl) {
+                    (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+                } else {
+                    const req = el.requestFullscreen || el.webkitRequestFullscreen;
+                    if (req) {
+                        const r = req.call(el);
+                        if (r && r.catch) r.catch(() => {});
+                    } else {
+                        showError('Fullscreen is not supported here.');
+                    }
+                }
+            }
+
+            document.getElementById('btn-open').addEventListener('click', openPicker);
+            document.getElementById('btn-fit').addEventListener('click', fit);
+            document.getElementById('btn-bg').addEventListener('click', cycleBackground);
+            document.getElementById('btn-fs').addEventListener('click', toggleFullscreen);
+
+            window.addEventListener('keydown', (e) => {
+                if (e.metaKey || e.ctrlKey) return;
+                const cx = window.innerWidth / 2;
+                const cy = window.innerHeight / 2;
+                const loaded = body.classList.contains('loaded');
+                switch (e.key) {
+                    case 'o': case 'O': openPicker(); break;
+                    case 'f': case 'F': toggleFullscreen(); break;
+                    case 'b': case 'B': cycleBackground(); break;
+                    case '0': fit(); break;
+                    case '+': case '=': if (loaded) transformAround(cx, cy, 1.25, 0); break;
+                    case '-': case '_': if (loaded) transformAround(cx, cy, 0.8, 0); break;
+                    case '[': if (loaded) transformAround(cx, cy, 1, -Math.PI / 12); break;
+                    case ']': if (loaded) transformAround(cx, cy, 1, Math.PI / 12); break;
+                    default: return;
+                }
+                e.preventDefault();
+            });
+
+            // ---------- Auto-hide chrome ----------
+
+            let idleTimer = 0;
+            function wake() {
+                if (body.classList.contains('idle')) body.classList.remove('idle');
+                clearTimeout(idleTimer);
+                idleTimer = setTimeout(() => {
+                    if (body.classList.contains('loaded') && pointers.size === 0) body.classList.add('idle');
+                }, 2500);
+            }
+            ['pointerdown', 'keydown'].forEach((t) => window.addEventListener(t, wake));
+            window.addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse') wake(); });
+
+            let lastSize = { w: window.innerWidth, h: window.innerHeight };
+            window.addEventListener('resize', () => {
+                // Keep the image centered relative to the viewport on resize/rotation.
+                view.tx += (window.innerWidth - lastSize.w) / 2;
+                view.ty += (window.innerHeight - lastSize.h) / 2;
+                lastSize = { w: window.innerWidth, h: window.innerHeight };
+                schedule();
+            });
+
+            render();
+        })();
+    </script>
+</body>
+</html>
