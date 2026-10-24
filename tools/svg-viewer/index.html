@@ -60,6 +60,7 @@
         }
 
         body.loaded #art { display: block; }
+        body.inverted #art { filter: invert(1); }
 
         #empty {
             position: fixed;
@@ -129,6 +130,7 @@
         }
 
         .bar a:hover, .bar button:hover { background: rgba(255, 255, 255, 0.08); }
+        .bar button[aria-pressed="true"] { background: rgba(96, 165, 250, 0.25); color: #93c5fd; }
         .bar a:focus-visible, .bar button:focus-visible { outline: 2px solid #60a5fa; }
         .bar svg { width: 16px; height: 16px; flex: none; }
 
@@ -203,6 +205,9 @@
         </button>
         <button id="btn-fit" class="needs-art" title="Fit to screen (0 / double-tap)">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+        </button>
+        <button id="btn-invert" class="needs-art" title="Invert colors (I)" aria-pressed="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg>
         </button>
         <button id="btn-bg" title="Background (B)">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 12h18"/><path d="M12 3v18"/></svg>
@@ -534,6 +539,12 @@
                 if (BACKGROUNDS[bgIndex]) body.classList.add(BACKGROUNDS[bgIndex]);
             }
 
+            const invertBtn = document.getElementById('btn-invert');
+            function toggleInvert() {
+                const on = body.classList.toggle('inverted');
+                invertBtn.setAttribute('aria-pressed', String(on));
+            }
+
             function toggleFullscreen() {
                 const el = document.documentElement;
                 const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
@@ -552,6 +563,7 @@
 
             document.getElementById('btn-open').addEventListener('click', openPicker);
             document.getElementById('btn-fit').addEventListener('click', fit);
+            invertBtn.addEventListener('click', toggleInvert);
             document.getElementById('btn-bg').addEventListener('click', cycleBackground);
             document.getElementById('btn-fs').addEventListener('click', toggleFullscreen);
 
@@ -564,6 +576,7 @@
                     case 'o': case 'O': openPicker(); break;
                     case 'f': case 'F': toggleFullscreen(); break;
                     case 'b': case 'B': cycleBackground(); break;
+                    case 'i': case 'I': if (loaded) toggleInvert(); break;
                     case '0': fit(); break;
                     case '+': case '=': if (loaded) transformAround(cx, cy, 1.25, 0); break;
                     case '-': case '_': if (loaded) transformAround(cx, cy, 0.8, 0); break;
